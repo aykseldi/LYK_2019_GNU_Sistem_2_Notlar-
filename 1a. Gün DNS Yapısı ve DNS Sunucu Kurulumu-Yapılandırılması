@@ -1,0 +1,236 @@
+DNS
+Dns aslında bir veritabanıdır. 
+İsimden İp adresine çevirmektir. 
+Adresler
+Güvenlik anahtarları
+Mail Exchange Bilgileri
+Text Kayıtları
+Host hardware software bilgileri
+NXDOMAIN --> Dns kaydı yok (Does not exist)
+NOERROR --> Bende böyle bir bilgi yok 
+dig --> 
+root@debian:~# dig mmmm.gentoo.org
+
+; <<>> DiG 9.11.5-P4-5.1-Debian <<>> mmmm.gentoo.org
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NXDOMAIN, id: 41472
+;; flags: qr rd ra; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 1
+
+root@debian:~# dig gentoo.org -t hinfo --> Bu sefer doğru adres girdik ama hardware bilgisi bulunamadı cevabı döndü
+
+; <<>> DiG 9.11.5-P4-5.1-Debian <<>> gentoo.org -t hinfo
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 14292
+;; flags: qr rd ra; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 1
+
+Loosely Coherent
+			Master  -->Değişiklikler burada yapılır
+	Slave 	Slave	Slave -->Değişikliler slavelere push edilir. 
+
+UDP ve TCP protokolü ve 53 portu kullanılır.
+Firewall üzerinden her ikisine birden izin verilmelidir. Eğer DNS hatası almaya başlarsak TCP 53 potunun sçılıp sçılmadığına bakmak lazım.
+
+
+Namespace
+fqdn --> Fully qualified Domain Namespace
+Gerçek adres --> www.gentoo.org. -> Sonda nokta vardır. 
+
+
+				.
+			.org  .com  .ford 
+		.gentoo  .google   .amazon 
+	.wwww .buss  
+	
+	--> Noktalar ile ayrılır ve her noktada en fazla 63 karakter olabiir
+
+Name Servers 
+	1.Autoritative (yetkili)
+		Master
+		Slave
+	2.Caching (Recursive)
+	3.Karışık 
+Hem autoritative hem de karışık kullanmamak lazım.
+Autoritative--> Bind , NSD, PowerDNS , Microsoft
+
+Karışık --> 	Bind , Unbound
+
+
+Resolvers
+Client makinada bir browser ile bir adres yazıldığında sistem çağrıları ile (gethostname by name  vb. ) glibc kütüphanesi ile resolver a sorar
+Uygulama -> Resolver -> DNS 
+
+
+root@debian:~# more /etc/resolv.conf
+nameserver 192.168.43.1
+
+
+resolver  --- caching server   	--------->  Root server
+								<---------
+						|		Cevabı şu adresten öğrenebilirsin
+						|       (org a sor der ve org a sahip dns sunucularının ip adreslerini gönderir)
+						|
+						|
+						|
+						---->> gTLD server (org ları bilen DNS sunucusu)
+            |
+			|
+			|
+		<---|
+gentoo.org
+server
+
+
+DIG Komutu
+
+root@debian:~# dig -t soa . +multi
+
+; <<>> DiG 9.11.5-P4-5.1-Debian <<>> -t soa . +multi
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR(Burası hata almadığımız gösteriyor), id: 24616
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 1280
+;; QUESTION SECTION:
+;.                      IN SOA (Startup Autoriity)
+
+;; ANSWER SECTION:
+.                       5009 IN SOA a.root-servers.net. nstld.verisign-grs.com. (
+                                2019072602 ; serial
+                                1800       ; refresh (30 minutes)
+                                900        ; retry (15 minutes)
+                                604800     ; expire (1 week)
+                                86400      ; minimum (1 day)
+                                )
+
+;; Query time: 102 msec
+;; SERVER: 192.168.43.1#53(192.168.43.1)
+;; WHEN: Fri Jul 26 20:41:16 +03 2019
+;; MSG SIZE  rcvd: 103
+
+dig -t soa . +multi @8.8.8.8  -->>8.8.8.8 ip adresine sorar
+
+
+root@debian:~# dig -t soa gentoo.org @a.root-servers.net.
+
+; <<>> DiG 9.11.5-P4-5.1-Debian <<>> -t soa gentoo.org @a.root-servers.net.
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 35679
+;; flags: qr rd; QUERY: 1, ANSWER: 0, AUTHORITY: 6, ADDITIONAL: 13
+;; WARNING: recursion requested but not available
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 1472
+;; QUESTION SECTION:
+;gentoo.org.                    IN      SOA
+
+;; AUTHORITY SECTION:
+org.                    172800 (Bilginin saniye cinsinden geçerlilik süresi)
+  IN      NS      a0.org.afilias-nst.info.
+  
+org.                    172800  IN      NS      a2.org.afilias-nst.info.
+org.                    172800  IN      NS      b0.org.afilias-nst.org.
+org.                    172800  IN      NS      b2.org.afilias-nst.org.
+org.                    172800  IN      NS      c0.org.afilias-nst.info.
+org.                    172800  IN      NS      d0.org.afilias-nst.org.
+
+;; ADDITIONAL SECTION:
+a0.org.afilias-nst.info. 172800 IN      A       199.19.56.1
+a2.org.afilias-nst.info. 172800 IN      A       199.249.112.1
+b0.org.afilias-nst.org. 172800  IN      A       199.19.54.1
+b2.org.afilias-nst.org. 172800  IN      A       199.249.120.1
+c0.org.afilias-nst.info. 172800 IN      A       199.19.53.1
+d0.org.afilias-nst.org. 172800  IN      A       199.19.57.1
+a0.org.afilias-nst.info. 172800 IN      AAAA    2001:500:e::1
+a2.org.afilias-nst.info. 172800 IN      AAAA    2001:500:40::1
+b0.org.afilias-nst.org. 172800  IN      AAAA    2001:500:c::1
+b2.org.afilias-nst.org. 172800  IN      AAAA    2001:500:48::1
+c0.org.afilias-nst.info. 172800 IN      AAAA    2001:500:b::1
+d0.org.afilias-nst.org. 172800  IN      AAAA    2001:500:f::1
+
+;; Query time: 363 msec
+;; SERVER: 198.41.0.4#53(198.41.0.4)
+;; WHEN: Fri Jul 26 20:48:35 +03 2019
+;; MSG SIZE  rcvd: 441
+
+
+
+TTL --> Time to Live , Saniye cinsinden cevap verir. 
+
+
+Cache Server ım resolve.conf daki kayıttır.
+root@debian:~# cat /etc/resolv.conf
+nameserver 192.168.43.1
+
+
+Toplam 13 tane Root server dır. 
+
+Multicast
+Unicast
+Broadcast
+Anycast  --> Bir sürü kanal ve ip adresleri aynı, herhangi birine sorduğumuzda  en hızlı dönen cevap alınıyor.
+
+DNSSEC
+Cevapların doğruluğunu garanti eder. 
+Gizlilik sunmaz 
+
+DNSCrypt
+
+ZSK- Zone Signing Key -->> ZOne lar Key leri imzalar
+KSK- Key Signing Key  -->>Key ler de bize geleni imzalar
+
+
+
+
+
+
+DNS sec li cevap 
+root@debian:~# dig gentoo.org. @192.168.43.1  +multi +dnssec
+
+; <<>> DiG 9.11.5-P4-5.1-Debian <<>> gentoo.org. @192.168.43.1 +multi +dnssec
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 61518
+;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 1
+	Flaglarin anlamları: 
+	query response  recursive desired recursive available	autenticated data
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags: do; udp: 1280
+;; QUESTION SECTION:
+;gentoo.org.            IN A
+
+;; ANSWER SECTION:
+gentoo.org.             900 IN A 89.16.167.134
+gentoo.org.             900 IN RRSIG A 5 2 900 (
+                                20200119203218 20190723203218 52980 gentoo.org.
+                                EZtcXilWnMoKeeJ8ji9MjsRk8Ctm7fHy9NyODXYP3HOy
+                                3FaAZhvfRmQg2UvcfXUNIzs865g1y+FvP46ZgYnEC+dl
+                                dlpL4Sk3ZrvDt95FejgyddsBDsZ+zh8BKfOoDzClUqCV
+                                ywrvo5O3ThV3DI1iKmKxWSOPWNnfKIiPVGeWdlgE/5Co
+                                XIjuPlxCTKsuJBjVBpUOkFMQepUuT77pn6Bfig== )
+
+;; Query time: 964 msec
+;; SERVER: 192.168.43.1#53(192.168.43.1)
+;; WHEN: Fri Jul 26 21:27:05 +03 2019
+;; MSG SIZE  rcvd: 257
+
+
+
+DNS Server Kurulumu 
+
+root@debian:~# apt install bind9 bind9utils
+
+
+root@debian:~# ln -s /etc/bind /etc/named --> Soft link yaptık bind i named e soflink yaptık.
+
+root@debian:~# vim /etc/bind/named.conf
+root@debian:~# ln -s /etc/bind /etc/named
+root@debian:~# vim /etc/bind/named.conf
+
+options
+local  -->Genelde bu tarafta yapılır local ayarlar 
+default-zones 
