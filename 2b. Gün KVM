@@ -1,0 +1,168 @@
+  KVM
+KVM kurulumu yapmadan önce CPU'nun sanallaştırma desteği var mı bunu öğrenmemiz gerekiyor. 
+Bunun için aşağıdaki komutu çalıtırdık.
+
+egrep -c '(vmx|svm)' /proc/cpuinfo
+aty@debian:~$ sudo egrep -c '(vmx|svm)' /proc/cpuinfo
+0
+--> 0 dönmesi yok anlamına geliyor, bu durumda bunu değiştirmemiz gerekecek. 
+Ancak  Virtual Box kullanıyorsanız, virtual box iç içe sanllaştırmayı desteklemiyor.
+Bu yüzden VMWare'e geçiş yaptık ve orada aşağıdaki ayarları yaptık. 
+
+Sanal makine üzerinde sanal makine kurabilmek maksadıyla Vmware üzerinde nested virtualization açılması gerekiyor. Aşağıdaki satırlar VmWare üzerinde iç içe sanallaştırmanın  nasıl açılacağını açıklmamaktadır.
+Virtualized HV is fully supported for virtual hardware version 9 or later VMs on hosts that support Intel VT-x and EPT or AMD-V and RVI. To enable virtualized HV, select VM->Settings and navigate to the processor settings screen. 
+*****-->>>Check the box next to  "Virtualize Intel VT-x/EPT or AMD-V/RVI."
+aty@debian:~$ sudo egrep -c '(vmx|svm)' /proc/cpuinfo
+[sudo] password for aty:
+2
+KVM direk shell de kurulu.
+aty@debian:~$ lsmod | grep -i kvm
+kvm_intel             245760  0
+kvm                   724992  1 kvm_intel
+irqbypass              16384  1 kvm
+
+KVM sanal makinaları oluşturmak için yardımcı programlar yüklemek için aşağıdaki komut çalıştırdık.
+aty@debian:~$ sudo apt install qemu-kvm
+
+
+##############################################################33##########
+ KVM üzerinde çalışan bir makşnada nasıl kvm sanallaştırma olacak?
+Bizim sanallaştırma Vmware olduğu için yapmadık ancak 
+KVM içinde kvm sanal makinesi çalıştırmak için ana sanal kvm makinesinde aşağıdaki klasör oluşturulup
+vim /etc/modprobe.d/kvm-nested.conf 
+options kvm-intel nested=1
+
+
+Aşağıdaki ilk komut modülü kaldırıp 2. komut modulü tekrar yğkledi.
+modpro -r kvm-intel
+modpro -a kvm-intel
+###################3#########################3##############################
+
+
+   Disk image 
+Başka işletim sisteleri tarafından bir blok aygıtı olarak algılanabilece bir dosya türü. 
+Sanal işletim sistemleri bunu disk gibi algılayıp kullanabilirler. 
+
+Fiziksel Host içinde -->>Dosya
+Sanal Host İçinde -->> Block Aygıtı
+
+Bu komut ile bulunduğum dizinde 2gb boyutunda bir dosya (özel) yarattı
+aty@debian:~$ sudo qemu-img create disk.img 2G
+Formatting 'disk.img', fmt=raw size=2147483648 
+ -->> Raw image türünü biçilendirisek ne kadar boyutta ise o kadar diskte yer kaplarlar.İyi yanı hızlı olmalarıdır sanal makinaya ekstra işlem yaptırmazlar. Kötü yanı extend edilemezler. 
+ 
+-->> Copy On Write image türü (COW) diskte yazdığınız veri kadar image yer kaplar. 
+
+Qemu imagelara default olarak raw image yaratır COW image yaratması için qemu ya söylemek gerekir. 
+Qemu nun destekledi COW image qcow2 dir. 
+
+aty@debian:~$ sudo qemu-img create disk.img 2G -f qcow2
+Formatting 'disk.img', fmt=qcow2 size=2147483648 cluster_size=65536 lazy_refcounts=off refcount_bits=16
+
+aty@debian:~$ ls -lh
+total 196K
+-rw-r--r-- 1 root root 193K Jul 21 11:48 disk.img
+
+ 
+aty@debian:~$ ls -l
+total 0
+-rw-r--r-- 1 root root 2147483648 Jul 21 11:35 disk.img
+
+Du komutu ile fiziksel olarak diskte kapladığı yeri bulduk.
+aty@debian:~$ sudo du -hs disk.img
+0       disk.img
+
+  KVM Sanal Makine oluşturma 
+-m ile ne kadar memory vericek, -hda hangi disk image ını kullancak, -cdrom hamgi iso kullanılacak, -boot d ile cdrom dan boot edecek -netdev  ile network yapısı parametreleri veirldi.
+aty@debian:~$ sudo -E kvm -m 512 -hda disk.img -cdrom debian-10.0.0-amd64-netinst.iso -boot d -netdev user,id=user.0 -device e1000,netdev=user.0
+
+-->> Bu şekilde sanal makina oluşturma eskide kaldı. Burada küçük bir hata bile katastrofik (ölümcül) etki yapar. 
+
+Bu yüzden libvirt kurduk :) 
+https://libvirt.org/docs.html
+
+aty@debian:~$ sudo apt install libvirt-daemon-system libvirt-clients virtinst
+Reading package lists... Done
+
+libvirt-daemon-system-->Sanallaştırma yönetim uygulaması, sunucu tarafını , system deamonını kurar.
+libvirt-clients-------->libvirt e bağlanıp komut çalıştırmaya yarayan program. Terminal arayüzü gibi 
+virtinst--------------->libvirt kullanarak sanal makina tanımlamayı sağlıyor. 
+
+libvirt in yönettiği tüm ağ yapılarının listesini alırız. 
+aty@debian:~$ sudo virsh net-list --all
+ Name      State      Autostart   Persistent
+----------------------------------------------
+ default   inactive   no          yes
+
+Default diye bir network kurmuş ancak bunu aktive etmemiş.
+
+Bunu değiştirmek için aşağıdaki komutu:
+aty@debian:~$ sudo virsh net-edit default
+
+Select an editor.  To change later, run 'select-editor'.
+  1. /bin/nano        <---- easiest
+  2. /usr/bin/vim.basic
+  3. /usr/bin/vim.tiny
+
+Eğer değişiklik yaparsak veya başlatmak için 
+aty@debian:~$ sudo virsh net-start default
+Network default started
+
+Arka tarafta bizim için br0 adlı bridge oluşturdui dhcp kurdu, NAT kuralını girdi. 
+aty@debian:~$ sudo brctl show
+bridge name     bridge id               STP enabled     interfaces
+virbr0          8000.525400585569       yes             virbr0-nic
+
+ip add
+5: virbr0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default qlen 1000
+    link/ether 52:54:00:58:55:69 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.122.1/24 brd 192.168.122.255 scope global virbr0
+       valid_lft forever preferred_lft forever
+6: virbr0-nic: <BROADCAST,MULTICAST> mtu 1500 qdisc pfifo_fast master virbr0 state DOWN group default qlen 1000
+    link/ether 52:54:00:58:55:69 brd ff:ff:ff:ff:ff:ff
+
+aty@debian:~$ sudo virsh net-list --all
+ Name      State    Autostart   Persistent
+--------------------------------------------
+ default   active   no          yes
+
+Autostart no olduğu için autostart yapmak için
+ 
+aty@debian:~$ sudo virsh net-autostart default
+Network default marked as autostarted
+
+aty@debian:~$ sudo virsh net-list --all
+ Name      State    Autostart   Persistent
+--------------------------------------------
+ default   active   yes         yes
+
+Libvirt ile sanal makine oluşturmak için komut..
+bu komutu ile oluşturulan sanal makinenin parametrelerini kvm1 adı ile kaydedilmiş oldu. 
+
+aty@debian:~$ sudo virt-install --name kvm1 --ram 512 --disk path=./kvm.img, size=1 --network network:default --accelerate --vnc -c ./debian-10.0.0-amd64-netinst.iso
+
+KVM konfigurasyonu (yukarıda oluşturduğumuz makine için)
+aty@debian:~$ sudo virsh edit kvm1
+Domain kvm1 XML configuration not changed.
+
+KVM sanal makşnayı destro ile kapatırız. 
+
+aty@debian:~$ sudo virsh list --all
+ Id   Name   State
+----------------------
+ 1    kvm1   running
+
+aty@debian:~$ sudo virsh destroy kvm1
+Domain kvm1 destroyed
+
+aty@debian:~$ sudo virsh list --all
+ Id   Name   State
+-----------------------
+ -    kvm1   shut off
+
+
+Sanal makinaların yönetimi için (etkileşimi) her araç var. Sanal makine diski resize etme, sanal makinadan dosya kopyalama, text görüntüleme, klonlama
+http://libguestfs.org/ 
+
+KVM hakkında iyi doküman ubuntu da var 
+https://help.ubuntu.com/community/KVM/
