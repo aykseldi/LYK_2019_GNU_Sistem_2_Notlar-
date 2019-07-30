@@ -1,0 +1,377 @@
+MAIL SERVER NASIL CALIŞIR
+Ayşw client -----------------------------> ayse@abc.com.tr 
+			SMTP SMTPS                     eposta sunucusu bazı 							  kontroller yapar
+
+mail.abc.com.tr ------------------------> DNS
+
+mail.abc.com.tr ------------------------> posta.xyz.ed.tr
+					SMTP SMTPS
+
+DNS <------------------------ posta.xyz.ed.tr
+		SPF kontrolü yapar (Reverse proxy kontorl yapar, abc.com.tr için email göndermeye tekili ip ler şunlardır)
+
+
+posta.xyz.ed.tr ---------------------> RBL kontrolü (Black listte var mı yok mu onu kontorl eder)
+
+posta.xyz.ed.tr -> Grey listte kontrolü yapar, robot mu değil mi,  yani git 2 dk. sonra gel der. 
+Sen gerçekten bir mail sunucusu musun yokssa bir bot musun?69
+
+posta.xyz.ed.tr ->Header check yapar, zaman, gönderen bilgisi vb. 
+posta.xyz.ed.tr ->Body check yapar, içerik bilgisi kontorlü, kelime kontrolü gibi
+posta.xyz.ed.tr ->Content security yapar,
+Anti spam-- epostayı analiz edip rating puanı vermek için kullanılır. Span assasin bakar, DSS bakar, Radon bakar 
+Buna göre spam olduğuna kanaat getirip konu kısmını manipule edip kullanıcıya teslim eder. 
+Anti virus--ANcak mailde virus varsa direk drop da edebilir. 
+
+Mail daha sonra kullanıcının home dosyasına eposta gelir ancak kullanıcının outlook una henüz düşmedi. 
+
+Daha sonra kullanıcı outlook üzerinden gönder al dediğimde outlook a POP3, IMAP protokolleri mail düşer. 
+
+
+IMAP protokolünde mailler sunucuda durur. Bu şekilde mail server ile senkronize bir şekilde çalışır. 
+
+IMAP kullanıyorsa mesela gelen mail hem cep telefonu hem ipadden aynı anda alınır. 
+
+IMAP kullanıp örneğin Ipada ile bir eposta gönderdiğimizde ise cep telefonumuzun gönderilen öğelerine düşmesi için  outlook a sunucu ile 
+senkronize et şeklinde ayarlanması gereklidir. 
+
+
+DKIM  --> Karşı taraftaki sunucuya public keyini gönderip kendi private key ile imzalayıp gönderir. 
+
+DMARC
+RBL
+SPF
+Eposta Sunucusu 
+
+POSTFIX smtp, MTA
+DOVECOT  imap, pop3, lmtp (s) 
+AMAVISD-NEW virus  ve spam analizi
+
+Email gönderdildi ------------> Postfix ---------------> DOVECOT
+															|
+															|
+															|
+															|
+															Client
+															
+eMAİL GÖNDERİRKEN direk postfix ile iltişim kurulur. Postfix emaili gönderir ve bir kopyasının da dovecot gönderir. 
+
+Posta sunucusu çalıştırmak için 
+		1. FQDN Fully Qualified Domain Name e sahip olmak
+		2. Dışarıya 25. porttan bağlantı sağlayabilmek.
+		3. Doğru zaman a sahip olmak. Zamanlama sunucusu önemli
+		4. Syslog --> Bir loglama sistemi olması gerekiyor. 
+
+			rsyslog configurasyonu 
+			vim /etc/rsyslogd/xxx.conf
+			mail.*   -/var/log/mail.log/mail --> - burada diske yazmadan servisin devam etmesini ve işletim sisteminin daha sonraki ilk fıratta dişske yazmasını sağlar. Çok log üreten sistemlerde diske yazma için bekleme servisi bekletebilir. 
+			
+			auth, authpriv.*  /var/log/auth.log
+		4. MX record olmalı 
+		5. A kaydı 
+		6. Reverse proxy kaydı olamlıdır. 
+		
+
+		Email 
+			header
+			body
+			
+			attachment header
+			attachment body
+			
+SMTP --> Maili kabul eder veya komple red edersiniz. 			
+LMTP --> Bir kişiden üç kişiye mail gönderiyorum. SMTP den farkı kşişi bazlı olarak kabul veya ret edebilir.  LMTP postfix den Dovecat e mail gönderilirken kullanılır. Bu sayede kişi bazlı accept/deny yapalabilir.  İntennet üzerinden mail giderken ise SMTP kullanılır.
+
+SMTP half duplex bir prtokoldür. Kendi söyler karşı dinler,  karşı söyler kendisi dinler. 
+
+
+
+
+
+
+
+
+
+
+
+POST FIX KURULUMU
+
+root@server:~# apt-get install postfix
+
+Kurulum dosyaları burada bulunur.
+
+root@server:~# ls -l /etc/postfix/
+total 120
+-rw-r--r-- 1 root root    60 Jul 27 20:38 dynamicmaps.cf
+drwxr-xr-x 2 root root  4096 Apr  1 20:27 dynamicmaps.cf.d
+-rw-r--r-- 1 root root  1463 Jul 27 20:38 main.cf
+-rw-r--r-- 1 root root 27129 Jul 27 20:38 main.cf.proto
+lrwxrwxrwx 1 root root    31 Jul 27 20:38 makedefs.out -> /usr/share/postfix/makedefs.out
+-rw-r--r-- 1 root root  6208 Jul 27 20:38 master.cf
+-rw-r--r-- 1 root root  6208 Jul 27 20:38 master.cf.proto
+-rw-r--r-- 1 root root 10268 Apr  1 20:27 postfix-files
+drwxr-xr-x 2 root root  4096 Apr  1 20:27 postfix-files.d
+-rwxr-xr-x 1 root root 11532 Apr  1 20:27 postfix-script
+-rwxr-xr-x 1 root root 29872 Apr  1 20:27 post-install
+drwxr-xr-x 2 root root  4096 Apr  1 20:27 sasl
+
+
+
+
+
+Aşağıdaki 2 dosyada ayar değişikliği yapacağız. 
+-rw-r--r-- 1 root root  6208 Jul 27 20:38 master.cf
+-rw-r--r-- 1 root root  1463 Jul 27 20:38 main.cf
+
+
+http://www.postfix.org/STANDARD_CONFIGURATION_README.html
+
+
+Postfix on a stand-alone Internet host --> Internet tarafına mail göderip alabilir .
+Postfix on a null client --> Sadece mail gönderir, mail almaz örneğin sunuculara filan kurulabilir. 
+Postfix on a local network --> Local network içinde mail atar, internet tarafından mail gönderemeyiz. 
+Postfix email firewall/gateway -->exchange in önüne postfix kurup postfix e mail check yaptırmak maksadıyla kurulanilir. 
+
+Biz
+
+
+/etc/postfix/main.cf:
+    # Optional: send mail as user@domainname instead of user@hostname.
+    #myorigin = $mydomain  --> myhostname kısmında ilk noktaya kadar olan kısmı atar gerisi my origin olur. 
+	myhostname=lkd.linux.org idi
+	mydomain parametresi ise otomatikman linux.org oldu.
+
+    # Optional: specify NAT/proxy external address.
+    #proxy_interfaces = 1.2.3.4  -->Doşarıda firewall olabilir ve firewall gerçek ip de ve postfix lcal ip de olabilir.Bu durumda postfix gerçek ip ye ihityaç duayvilir.
+
+    # Alternative 1: don't relay mail from other hosts.
+    mynetworks_style = host
+    relay_domains =
+
+    # Alternative 2: relay mail from local clients only. --> Clientlardan gelecek posta gönderme isteklerini cevaplar. Aşaıdaki network den mail atmasına izin veriri.
+    # mynetworks = 192.168.1.0/28
+    # relay_domains =
+	
+	smtpd_relay_restrictions = permit_mynetworks permit_sasl_authenticated defer_unauth_destination
+	myhostname = lkd.linux.org
+	alias_maps = hash:/etc/aliases
+	alias_database = hash:/etc/aliases
+	mydestination = $myhostname, localdomain, localhost, localhost.localdomain, localhost , $mydomain  --> önceden ancak eraya@lkd.a21an.org u kabul ediyordu bunu ekleyince araya@a21an.org u da kabul edilecek.
+	relayhost =    -->Örnegin gmail e mail göndericez, direk gmail e göndermek yerine başka bir yere gönder orası halledcek demek.  
+	mynetworks = 192.168.1.0/24 --> hangi ip blokları kullanıcı adı şifre vermeden mail atabiliecek. 
+	mailbox_size_limit = 0
+	recipient_delimiter = +  -->eraya+linux@linux.org.tr burada + dan sonrasını dikkate almaz ve direk araya@linux.org.tr gider. burada + ile biz gelen mailların direk gelene değil de linux klasörüne düşmesini sağlarız.
+	inet_interfaces = all --> Nerden dinleyim. all her taraftan dinle. Loopback only desyedik dışarıdan kimse email gönderemez çünkü 25 numaralı portu sadece localhost dinliyor. 
+	inet_protocols = all
+
+	######################################################################
+Örnek bir mail gönderme olayı 
+
+root@server:/etc/postfix# telnet localhost 25
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
+220 lkd.linux.org ESMTP Postfix (Debian/GNU)
+ehlo localhost
+250-lkd.linux.org
+250-PIPELINING
+250-SIZE 10240000
+250-VRFY
+250-ETRN
+250-STARTTLS
+250-ENHANCEDSTATUSCODES
+250-8BITMIME
+250-DSN
+250-SMTPUTF8
+250 CHUNKING
+mail from:<>
+250 2.1.0 Ok
+rcpt to: <root@lkd.linux.org>
+rcpt to: <aty@lkd.linux.org>
+
+rcpt to: <erayaslan@gmail.com>
+250 2.1.5 Ok
+data
+354 End data with <CR><LF>.<CR><LF>
+Subject: Test
+From: Bill Gates <bill.ms.com>
+Merhaba ali
+.
+250 2.0.0 Ok: queued as A971EF00904
+quit
+221 2.0.0 Bye
+Connection closed by foreign host.
+
+
+Mail in içeriği 
+
+You have mail in /var/mail/root
+root@server:/etc/postfix# ls /var/mail/root
+/var/mail/root
+root@server:/etc/postfix# ls -la  /var/mail/root
+-rw------- 1 root mail 463 Jul 27 22:15 /var/mail/root
+root@server:/etc/postfix# more /var/mail/root
+From MAILER-DAEMON  Sat Jul 27 22:15:38 2019
+Return-Path: <>
+X-Original-To: root@lkd.linux.org
+Delivered-To: root@lkd.linux.org
+Received: from localhost (localhost [IPv6:::1])
+        by lkd.linux.org (Postfix) with ESMTP id A971EF00904
+        for <root@lkd.linux.org>; Sat, 27 Jul 2019 22:14:18 +0300 (+03)
+Subject: Test
+From: Bill Gates <bill.ms.com@linux.org>
+Message-Id: <20190727191425.A971EF00904@lkd.linux.org>
+Date: Sat, 27 Jul 2019 22:14:18 +0300 (+03)
+
+Merhaba ali
+
+	
+Kuyruktaki mailleri gösterir 
+root@server:/etc/postfix# mailq
+Mail queue is empty
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+root@server:/etc/postfix# postfix reload
+postfix/postfix-script: refreshing the Postfix mail system
+
+
+DOVECOT
+Postfix de kayıtlı mailleri bize IMAP, POP3 ile göstere Dovecot dır. Dovecot LMTP yi destekler. Yani farklı kişilere gönderip bir kısmı accept deny edilebilir. 
+
+
+Dovecot Kurulumu 
+
+root@server:/etc/postfix# apt-cache search dovecot
+argonaut-dovecot - Argonaut (client-module for dovecot)
+ciderwebmail - IMAP webmail service
+dovecot-auth-lua - secure POP3/IMAP server - Lua authentication plugin
+dovecot-core - secure POP3/IMAP server - core files
+dovecot-dev - secure POP3/IMAP server - header files
+dovecot-gssapi - secure POP3/IMAP server - GSSAPI support
+dovecot-imapd - secure POP3/IMAP server - IMAP daemon
+dovecot-ldap - secure POP3/IMAP server - LDAP support
+dovecot-lmtpd - secure POP3/IMAP server - LMTP server
+dovecot-lucene - secure POP3/IMAP server - Lucene support
+dovecot-managesieved - secure POP3/IMAP server - ManageSieve server
+dovecot-mysql - secure POP3/IMAP server - MySQL support
+dovecot-pgsql - secure POP3/IMAP server - PostgreSQL support
+dovecot-pop3d - secure POP3/IMAP server - POP3 daemon
+dovecot-sieve - secure POP3/IMAP server - Sieve filters support -->Kullanıcılara ilave kural getime imkanı sağlar.
+dovecot-solr - secure POP3/IMAP server - Solr support
+dovecot-sqlite - secure POP3/IMAP server - SQLite support
+dovecot-submissiond - secure POP3/IMAP server - mail submission agent
+dovecot-antispam - Dovecot plugins for training spam filters
+
+
+Biz 2 ğpackage kurucağız. dovecot-imapd ve dovecot-lmtpd
+root@server:/etc/postfix# apt-get install dovecot-imapd dovecot-lmtpd
+Reading package lists... Done
+Building dependency tree
+
+
+
+etc/dovecot/conf.d/10-mail.conf 
+
+mail_location = maildir:~/.mail.dir  --> Mbox, maildir bunlar mail tutma formatları. Biz maildir formatında tutmak istiyoruz. Bu mail location ile dovecot ayağa kalktığında mailler nerede onu gösteriyoruz. 
+
+Hangi kullanıcı ile servisi kullancaksam onun home dizinine aşağıdaki gibi oluşturduj
+root@server:~# mkdir ./maildir
+
+Aşağıdaki değişiklikleri yaptık.
+vim /etc/dovecot/conf.d/10-master.conf
+
+
+service lmtp {
+  unix_listener lmtp /var/spool/postfix/private/dovecot-lmtp {
+	group = postfix
+	mode = 0660
+	user = postfix
+    #mode = 0666
+  }
+---->>>> Aşağıdaki kısmı yorum satırını kaldırdık ve bir kaç satır daha ekledik. 
+  # Postfix smtp-auth
+  unix_listener /var/spool/postfix/private/auth {
+    group = postfix
+	mode = 0666
+	user = postfix
+  #}
+  
+  
+  vim /etc/dovecot/conf.d/10-auth.conf
+
+  auth_mechanism = plain_login
+  
+  !!include auth-passwdfile.conf.ext
+   
+  Aşağıdaki gibi değiştidik diğer yerleri commentledik. 
+   vim /etc/dovecot/conf.d/auth-passwdfile.conf.ext
+  passdb {
+  driver = passwd-file
+  arg=schema=PLAIN username_format=%Ln /etc/dovecot/users
+  }
+
+users dosyası oluşturduk ve şifreleri verdik 
+root@server:/etc/dovecot/conf.d# vim /etc/dovecot/users
+root:{PLAIN}123:1:1:Root Sahip:/home/root/::
+aty:{PLAIN}123:1001:1001:ali taha:/home/aty/::
+
+
+
+root@server:/etc/dovecot/conf.d# systemctl restart dovecot
+root@server:/etc/dovecot/conf.d# systemctl status dovecot
+● dovecot.service - Dovecot IMAP/POP3 email server
+   Loaded: loaded (/lib/systemd/system/dovecot.service; enabled; vendor prese
+   Active: active (running) since Sun 2019-07-28 00:24:37 +03; 10s ago
+     Docs: man:dovecot(1)
+           http://wiki2.dovecot.org/
+ Main PID: 9888 (dovecot)
+    Tasks: 4 (limit: 1150)
+   Memory: 3.3M
+   CGroup: /system.slice/dovecot.service
+           ├─9888 /usr/sbin/dovecot -F
+           ├─9889 dovecot/anvil
+           ├─9890 dovecot/log
+           └─9891 dovecot/config
+
+Jul 28 00:24:37 server systemd[1]: Started Dovecot IMAP/POP3 email server.
+Jul 28 00:24:39 server dovecot[9888]: master: Dovecot v2.3.4.1 (f79e8e7e4) st:
+
+Dovecot a 143 portundan login olduk.
+telnet 127.0.0.1  143
+
+a01 login aty 123
+
+a01 OK [CAPABILITY IMAP4rev1 SASL-IR LOGIN-REFERRALS ID ENABLE IDLE SORT SORT=DISPLAY THREAD=REFERENCES THREAD=REFS THREAD=ORDEREDSUBJECT MULTIAPPEND URL-PARTIAL CATENATE UNSELECT CHILDREN NAMESPACE UIDPLUS LIST-EXTENDED I18NLEVEL=1 CONDSTORE QRESYNC ESEARCH ESORT SEARCHRES WITHIN CONTEXT=SEARCH LIST-STATUS BINARY MOVE SNIPPET=FUZZY LITERAL+ NOTIFY SPECIAL-USE] Logged in
+
+
+a02 list "" "*"
+* LIST (\HasNoChildren) "." INBOX  --> Sadec ınbox klasörü var. Sent yok.
+a02 OK List completed (0.001 + 0.000 secs).
+a01 logout
+
+
+
+Postfix in dovecot ı tanıması için main.cf
+root@server:/etc/dovecot/conf.d# vim /etc/postfix/main.cf
+local_transport = lmtp:unix:private/dovecot-lmtp  --->/etc/dovecot/conf.d/10-master.conf ile uyumlu olacak 
+smtpd_sasl_auth_enable = yes  --> autentication yap
+smtpd_sasl_path = private/auth  --> Private auth kullan 
+smtpd_sasl_type = dovecot  --< Login işini dovecot a bıraktık. Dovecot bu ayarlar ile login olunca private/auth soketi üzerinden soracak 
+smtpd_tls_auth_only = yes --> tls autentication ı sadece kabul eder. Diğer güvenlik önlemi alındı 
+
+
+
+root@server:/etc/dovecot/conf.d# sudo apt-get install mailutils
+root@server:/etc/dovecot/conf.d# date | mail -s test5 root@lkd.linux.org
