@@ -1,1 +1,1 @@
-# LYK_2019_GNU_Sistem_2_Notlar-
+# LYK 2019 GNU Linux Sistem 2
