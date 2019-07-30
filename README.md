@@ -1,0 +1,1 @@
+# LYK_2019_GNU_Sistem_2_Notlar-
