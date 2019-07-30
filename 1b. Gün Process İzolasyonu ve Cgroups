@@ -1,0 +1,100 @@
+  Cgroups nedir?
+Cgroups (Control Groups, Kontrol Grupları); processleri kümelendirerek işlemci, sistem hafızası, ağ, bant genişliği gibi kaynakların kullanımlarını sınırlandırmaya ve izole etmeye yarayan Linux çekirdeğinin bir özelliğidir. Cgroups kullanılarak sistem yöneticileri görevler ve kullanıcılar arasında öncelik, engelleme yapabilmekte, sistem kaynakların kullanımını daha verimli hale getirebilmektedir.
+
+Kontrol grupları üzerinde kontrol edebileceğimiz nesneleri aşağıdaki şekilde listeletebiliriz.
+[root@localhost ~]# ll /sys/fs/cgroup/
+total 0
+drwxr-xr-x. 2 root root  0 Jul 20 04:03 blkio
+lrwxrwxrwx. 1 root root 11 Jul 20 04:03 cpu -> cpu,cpuacct
+lrwxrwxrwx. 1 root root 11 Jul 20 04:03 cpuacct -> cpu,cpuacct
+drwxr-xr-x. 2 root root  0 Jul 20 04:03 cpu,cpuacct
+drwxr-xr-x. 2 root root  0 Jul 20 04:03 cpuset
+drwxr-xr-x. 4 root root  0 Jul 20 04:03 devices
+drwxr-xr-x. 2 root root  0 Jul 20 04:03 freezer
+drwxr-xr-x. 2 root root  0 Jul 20 04:03 hugetlb
+drwxr-xr-x. 2 root root  0 Jul 20 04:03 memory
+lrwxrwxrwx. 1 root root 16 Jul 20 04:03 net_cls -> net_cls,net_prio
+drwxr-xr-x. 2 root root  0 Jul 20 04:03 net_cls,net_prio
+lrwxrwxrwx. 1 root root 16 Jul 20 04:03 net_prio -> net_cls,net_prio
+drwxr-xr-x. 2 root root  0 Jul 20 04:03 perf_event
+drwxr-xr-x. 2 root root  0 Jul 20 04:03 pids
+drwxr-xr-x. 4 root root  0 Jul 20 04:03 systemd
+
+  Cgroup Bileşenleri
+blkio -->>Bir processin saniyede ne kadar veri okuyup yazabileceğini sınırlandırabilir. 
+Çalışan processlerin io  aygıtlarına erişimini denetler. io veya block aygıtlarından disk kastetilmektedir. Yani diskten ne kadar hızla veri okuyup yazabileceği denetlenebilir. 
+
+Cpu -->> Processin kullanabileceği cpu miktarı konusunda sınırılama getirebilir. 
+
+cpuset -->>> Processin hangi cpu larda çalışabileceğini değiştirebilir veya o esnada hangi cpu da çalıştığını söyleyebiliriz. 
+
+memory -->> Processin kullancağı ram ve swap miktarını görüntüler ve kısıtlayabilir 
+
+freezer -->> Processin çalışma ve durdurma gibi kontrolleri yapar. Sanal makinelerin pause edilmesi bu yöntem vasıtasıyla olur.
+
+  Libcgroup-Tools Paketi
+cgroup tools kurduk, cgroupları daha rahat yöneteceğimiz bir paket kurmuş olduk.
+[root@localhost cgroup]# yum install libcgroup-tools
+
+Processlerin hangi cpularda çalıştığını gösterir.
+[root@localhost cpuset]# cat /sys/fs/cgroup/cpuset/cpuset.cpus
+0
+ Centos reposu eski olduğu için epel reposunu kurduk
+ yum install -y epel-release
+ 
+  Stress Paketi
+ Makina üzerinde sanal şekilde yük oluşturmak maksadıyla stress paketini kurduk.
+ yum install -y stress 
+  
+ stress -c 1 -->> Benim makinede tek cpu olduğu için 1 verdim. Stress bana cpu nun %100 ünü kullanan bir process oluşturdu.
+ 
+ top - 06:03:53 up  2:00,  6 users,  load average: 0.98, 0.50, 0.23
+Tasks: 113 total,   3 running, 110 sleeping,   0 stopped,   0 zombie
+%Cpu0  :100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+KiB Mem :  1014972 total,   522044 free,   128716 used,   364212 buff/cache
+KiB Swap:  1134588 total,  1134588 free,        0 used.   707576 avail Mem
+
+Bu şekilde tüm cpuları kullanbilmesinin sebebi cpu
+
+  PID USER      PR  NI    VIRT    RES    SHR S %CPU %MEM     TIME+ COMMAND
+12500 root      20   0    7308    100      0 R 92.4  0.0   1:45.17 stress
+
+  Bir Cgroup Alt Nesnesi Yaratmak
+Cgroup altında cpuset dizini altında, cpu kullanımını limitlendirmek için ayar yapabileceğimiz deneme adlı bir alt grup oluşturduk. Deneme grubu bir üst dizindeki ayarları inherit etmektedir. 
+cgcreate -g cpuset:/deneme
+/sys/fs/cgroup/cpuset dizinin altına deneme adlı bir grup yarattık.
+
+Her bir kontrol grubu kendi içerisnde hiyerarşik çalışır. Cpuset dizini içerindeki deneme grubu oluşturunca üst dizindeki değerleri kullanırlar.
+
+Ana dizindeki cpuset.cpu -->0 1 
+Deneme dizinindeki de default olarak aynı oluşur. Ancak alt dizine indikçe biz farklı kısıtlar girebiliriz. Yani 2 cpu yu değil de 1 cpu yu kullancak şekilde  düzenleyebilirz. 
+
+echo "0" | tee /sys/fs/cgroup/cpuset/deneme/cpuset.cpus  -->>Deneme içerisndeki cpuset.cpus kısmını ilk cpu yu kullan şeklinde kısıtladık.
+
+[root@localhost deneme]# echo "0" | tee /sys/fs/cgroup/cpuset/deneme/cpuset.mems
+0
+[root@localhost deneme]# more cpuset.mems
+0
+
+Task dosyası içerisine hangi processlerin bu cgroup a dahil olacağını söyleyebiliriz. Burada process id verilmesi gerekmektedir.
+Örneğin bash processini deneme cgroupunun içerisine verirsek bash processin oluşturacağı(yaratacağı) diğer processlerden de deneme cgroup içerisinde oluşur. 
+ 
+ echo $$ -->> Bash procesin id sini verir
+ 
+ Kaynakları birbirinden izole edilebildiği gibi kısıtlanabilir de. Bunlar cgroup aracılığla yapılır. 
+ 
+/sys/fs/cgroup/memory/ içerisine mkdir diyerek de dizin oluşturursak gerekli dosyaları kendi hazırlar. 
+
+Aşağıdaki komut ile mem01 adlı memory alt dizinde bash procesesi çalışacak. 
+root@debian:/sys/fs/cgroup/memory/mem01# echo $$ |tee /sys/fs/cgroup/memory/mem01/tasks
+10708
+
+Bu komut ile 512 MB memory kullanma limiti koyduk. Zaten bizim bash shell inide mem01 içine almıştırk.
+root@debian:/sys/fs/cgroup/memory/mem01# echo $((512*1024*1024)) | tee /sys/fs/cgroup/memory/mem01/memory.limit_in_bytes
+536870912
+
+Komut ile 1G memory kullanmak isteyen bir process yarattık ancak top ile yarattık ama memory.limit_in_bytes değeri girdiğimiz için ancak 512 M kullanabiliyor. 
+
+stress -m 1 --vm-bytes 1g --vm-hang 5
+Top çıktısı 											%MEM
+ 11428 root      20   0 1052428 519832    268 R  69.4  52.7   1:01.80 stress
