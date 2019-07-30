@@ -1,0 +1,169 @@
+Donanım Sanallaştırma (Hardware Virt)
+
+Sanallaştırma Yöneticisi 
+
+
+  Donanım Sanallaştırma Nedir?
+Doananımın tüm kaynaklar Hypervisor tarafından kontrol edilir. Tip  1 Sanallaştırma dır. Eğer hypervisor çalışmazsa sanal makineler de çalışmaz. 
+Tip 1 hypervisor kurulum programı ile gelir. (Kendisi çalışır) Hypervisor bir işletim sistemi değildir. Onun üzerine sanal maine kurup daha sonra işletim sistemi kurabiliriz. Vmware ESXI, Oracle VM, XEN
+
+Tip2 Hypervisor donanım üzerinde işetim sistemi çalışır onun üzeirnde hypervisor çalışır ve sanal makineler hypervisor üzerine kurulur. Sistem kaynaklarını işletim sistemi kontrol eder. VirtualBox, Hyper-V, Vmware WorkStation, Linux Kernel-->> Linux Kernel kendi de hypervisor görevi görür.
+
+		1.İsolasyon  --> İster AMD ister Intel Cpu takılabilir. Sanal makinenin kaynağını fiziksel kaynaktan izole ediyor.
+		2.Kaynak paylaşımı
+		3. Kaynak standartlaştırma -(Dikey İsolasyon)
+		
+Eğer kaynak standartlaştırmaya gerek yoksa sadece isolasyon a ihtiyaç varsa cgroup filan kullanılarak process Virtualizatrion(Isolation) kullanılabilir.
+  Bazı Sanallaştırma Sİstemleri 
+LXC -->> (Linux Containers)
+Docker
+OpenV2
+Solaris Zones (1970)
+
+  LXC Kurulumu ve Yapılandırması 
+İlk önce LXC yi kurmakla başlıyoruz. 
+sudo apt install lxc
+İlk önce bu dosyaya aşağıdaki parametreleri girdik. 
+root@debian:# cat /etc/default/lxc-net
+USE_LXC_BRIDGE="true"
+LXC_BRIDGE="lxcbr0"
+LXC_ADDR="10.0.10.1"
+LXC_NETMASK="255.255.255.0"
+LXC_NETWORK="10.0.10.0/24"
+LXC_DHCP_RANGE="10.0.10.2,10.0.10.254"
+root@debian:#
+LXC-Net i başlattık 
+root@debian:# systemctl restart lxc-net
+
+LXC nin kurmuş olduğu DHCP processini ve bilgilerini gösterir. 
+root@debian:# ps fauxwww |grep  dnsmasq
+root      11578  0.0  0.0   6076   888 pts/2    S+   03:22   0:00  |                   \_ grep dnsmasq
+dnsmasq   11570  0.0  0.0  18012   352 ?        S    03:20   0:00 dnsmasq -u dnsmasq --strict-order --bind-interfaces --pid-file=/run/lxc/dnsmasq.pid --listen-address 10.0.10.1 --dhcp-range 10.0.10.2,10.0.10.254 --dhcp-lease-max=253 --dhcp-no-override --except-interface=lo --interface=lxcbr0 --dhcp-leasefile=/var/lib/misc/dnsmasq.lxcbr0.leases --dhcp-authoritative
+
+root@debian:# ip link 
+8: lxcbr0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN mode DEFAULT group default qlen 1000
+    link/ether 00:16:3e:00:00:00 brd ff:ff:ff:ff:ff:ff
+    
+Aşağıdaki komu konteynır listesini gösterir
+root@debian:# lxc-ls --> Konteynır listesini gösterir
+debian01
+
+Konsol ile de konteynır a bağlanabiliriz. 
+root@debian:/var/lib/lxc/debian01# lxc-console -n debian01
+
+root@debian:# lxc-ls --fancy
+NAME     STATE   AUTOSTART GROUPS IPV4 IPV6 UNPRIVILEGED
+debian01 RUNNING 0         -      -    -    false
+
+root@debian:/sys/fs/cgroup/memory/mem01# lxc-stop --name debian01
+-->> Çalışan konteynır durdurulur.
+
+  LXC'nin ana dizini aşağıdadır. 
+root@debian:# ls  /var/lib/lxc/debian01/rootfs/
+
+LXC nin içerisnde 
+root@debian:# lxc-start --name debian01
+root@debian:# lxc-attach --name debian01
+
+root@debian01:~# touch /deneme.txt -->>\ Konteyner içinde bir dosya oluşturdum 
+
+root@debian:~# lxc-attach --name debian01 -- touch /deneme01.txt
+bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
+boot  etc  lib   media  opt  root  sbin  sys  usr
+
+root@debian:/var/lib/lxc/debian01/rootfs# pwd
+/var/lib/lxc/debian01/rootfs
+
+Konteyner dışından komut da çalıştırabiliriz. Eğer komut vermezsek direk bash çalıştırır.
+lxc-attach --name debian01 -- touch /deneme01.txt
+
+Konteyner içinde iputils paketini kurduk
+root@debian01:~# apt install  psmisc iputils-ping
+root@debian01:~# apt install  procps
+
+Kontey içinden komutu çalıştırılırsa sadece kendi processlerini görür. 
+ps fauxwww --
+
+Örneğin aşağıdaki gibi lxc  ve altındaki her konteynır için dizin oluşturuluyor. Böylecde her konteynır ı 1 GB mem olarak ayarlayabileceğimiz gibi tüm konteynırların toplamda 10 GB ram olarak da kısıtlayabiliriz. 
+
+/sys/fs/cgroup/memory/lxc/debian01 
+  LXC İmajları
+Peki lxc-create -n debian01 -download komutu ile konteynır imageını nerden  alır.
+
+ aty@debian:/sys/fs/cgroup/memory/lxc/debian01$ cd  /usr/share/lxc/templates/   
+ aty@debian:/usr/share/lxc/templates$ ls -la
+-rwxr-xr-x 1 root root 18155 Apr 14 09:46 lxc-download
+
+-->> Yukarıdaki download  dosyasına bakar.Download dosyasında konteynır için gerekli konfigurasyon var. 
+
+LXC download ettiğinde cache e aşağıdaki dosyaları indirir . LXC destroy dediğimizde cache sislinmez sadece var/lib/lxc/konteynır_adı altındaki dosya silinir. 
+
+aty@debian:/var/cache/lxc/download/debian/buster/amd64/default$ pwd
+/var/cache/lxc/download/debian/buster/amd64/default
+aty@debian:/var/cache/lxc/download/debian/buster/amd64/default$ ls -la
+total 85644
+drwxr-xr-x 2 root root     4096 Jul 20 18:48 .
+drwxr-xr-x 3 root root     4096 Jul 20 18:48 ..
+-rw-r--r-- 1 root root       15 Jul 20 18:48 build_id
+-rw-r--r-- 1 root root       65 Jul 20 01:25 config
+-rw-r--r-- 1 root root       72 Jul 20 01:25 config.1
+-rw-r--r-- 1 root root       72 Jul 20 01:25 config.2
+-rw-r--r-- 1 root root       72 Jul 20 01:25 config.3
+-rw-r--r-- 1 root root       72 Jul 20 01:25 config.4
+-rw-r--r-- 1 root root      111 Jul 20 01:25 config-user
+-rw-r--r-- 1 root root      125 Jul 20 01:25 config-user.1
+-rw-r--r-- 1 root root      125 Jul 20 01:25 config-user.2
+-rw-r--r-- 1 root root      125 Jul 20 01:25 config-user.3
+-rw-r--r-- 1 root root      125 Jul 20 01:25 config-user.4
+-rw-r--r-- 1 root root      164 Jul 20 01:25 create-message
+-rw-r--r-- 1 root root       81 Jul 20 01:25 excludes-user
+-rw-r--r-- 1 root root       11 Jul 20 01:25 expiry
+-rw-r--r-- 1 root root 87626700 Jul 20 01:35 rootfs.tar.xz
+-rw-r--r-- 1 root root       25 Jul 20 01:25 templates
+
+Biz başka bir makinedeki lxc konteynırımızı başka bir linux makinede 
+/var/lib/lxc/konteynır_adı dosyasını taşıyarak yapabiliriz.
+
+/usr/share/lxc/templates -->> Klasörü içerisinde centos, ubuntu gibi betikler de var ve bunları da parametre geçerek ubuntu kontey kurabiliriz. Ancak örneğin centos kurmak istersek debian üzerine yum kurmamız gerekir. Burada önemli olan lxc sürümünün kuracağımız başka makina için de aynı olmasıdır. 
+
+Konteynırın konfig dosyası. Eğer başka bir makineye konteynır o taşıyacak isem bu dosyaya bakmam gerekiyor. 
+
+root@debian:/var/lib/lxc/debian01# man lxc.container.conf
+-->> Dosyasında ayrıntılı olarak ayar parametreleri ve nasıl  verileceğini yazar. 
+
+https://linuxcontainers.org/lxc/manpages/man5/lxc.container.conf.5.html
+
+root@debian:~# cd /var/lib/lxc/debian01/
+root@debian:/var/lib/lxc/debian01# more config
+# Template used to create this container: /usr/share/lxc/templates/lxc-download
+# Parameters passed to the template:
+# Template script checksum (SHA-1): 273c51343604eb85f7e294c8da0a5eb769d648f3
+# For additional config options, please look at lxc.container.conf(5)
+
+# Uncomment the following line to support nesting containers:
+#lxc.include = /usr/share/lxc/config/nesting.conf
+# (Be aware this has security implications)
+
+
+# Distribution configuration
+lxc.include = /usr/share/lxc/config/common.conf
+lxc.arch = linux64
+
+# Container specific configuration
+lxc.apparmor.profile = generated
+lxc.apparmor.allow_nesting = 1
+lxc.rootfs.path = dir:/var/lib/lxc/debian01/rootfs
+lxc.uts.name = debian01
+
+# Network configuration
+lxc.net.0.type = veth
+lxc.net.0.link = lxcbr0
+lxc.net.0.flags = up
+
+Aşağıdaki dosyaya tüm konteynırları ortak olarak kısıt konabilir ancak konteynır kendi konf dosyasına değer gşrersek bu common dosyası override edilir. 
+/usr/share/lxc/config/common.conf
+Konteyner kendi yapabileceği şeylerde kısıtlanabilir .
+
+  LXC mi Docker Mı?
+Konteyner içinde kaç uygulama çalışacak? Eğer bşrden fazla uygulama çalıştıracak ise LXC mantıklı ancak sadece tek bir uygulama çalışacak ise Docker daha mantıklıdır. 
+Konteynır da ps -fe yaptığımızda bir sürü process çalıştığını görürüz. 
