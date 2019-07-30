@@ -1,0 +1,307 @@
+LİNUX SYSTEM 4. GÜN
+Barkın Kılıç
+Egitmen barkin@kilic@xyz
+
+  OSİ KATMANLARI
+Uygulama		Veri son kullanıcıya veya başka uygulamalara gönderilir. 
+Sunum			Format Dönüşümünü yapar
+Oturum			Kimliklendirme (Bankamatşk kartına parola girdiğimizse bize ait diğer bilgileri getirmesi gibi) 
+Taşıma			Veri iletimi	TCP, UDP  Port
+Ağ				IP Adresleme  	Ipv4, ICMP (Mesajlaşma ve kontrol)
+Veri/Bağlantı 	Digital 		Ethernet Adresi  Arp (MAC adresi)
+Fiziksel   		Analog
+
+Http protokolü text bazlı bir protokoldür. Peki metin bazlı protokolden video, ses (binary) gibi şeyleri nasıl taşırız? ---> Binary formatını text formatına dönüştürmek gereklidir. 
+
+  Arp ve Rarp 
+Rarp -->>> Mac adresleri ile IP adreslerini eşleştirir.
+Arp -->> Ip adresinden MAc adresini eşleştirir.
+
+Arp ile ip adresi bilinir, iletişim kurmak için bu cihazın Mac adresini öğrenmesidir. 
+
+  Ipv4 Yapısı
+32 bitlik bir adresleme yapılabilir. 
+4 tane 8 bit lik parçaya bölünmüştür. 
+
+0.0.0.0 -- 255.255.255.255
+Toplamda 2 uzeri 32 adreslenebilir makina sayısıdır bunlardan 0.0.0.0 ve 255.255.255.255 cihazlara verilemez. 
+
+Örneğin 192.168.1.0 ip adresini bir makineye verebilmek için alt ağ maskesine bakmak lazım. Burada alt ağ maskesi /23 olursa makineye verilebilir.
+
+8 bit ||8 bit || 8 bit  || 8 bit  IP adresi 		192.168.1.0
+8 bit ||8 bit || 8 bit  || 8 bit  Alt Ağ Maskesi -->255.255.254.0 
+
+Veya CIDR olarak 192.168.1.0/23 gösterimi 
+
+    A,B,C,D Sınıf Ip Blokları
+A, B ve C sınıfları Multicast olarak kullanılmak üzere rezerve edilmişitr.
+
+0.x.x.x.x.x.x.x--> A sınıfı  ip adresi  başlangıcı 0 ila 126 arası olan grup
+1.0.x.x.x.x.x.x--> B sınıfı  ip adresi  başlangıcı 128 ila 191 arası olan grup
+1.1.0.x.x.x.x.x--> C sınıfı  ip adresi  başlangıcı 192 ila 223 arası olan grup
+1.1.1.0.x.x.x.x--> D sınıfı  ip adresi  başlangıcı 224 ila 239 arası olan grup
+1.1.1.0.x.x.x.x--> E sınıfı  ip adresi  başlangıcı 240 ila 247 arası olan grup
+
+
+  NAT  Yapısı
+Public ortamda olanlar bir tane Ip adresi olsun 
+Private ortamda ise istediğimiz Ip leri kullanabiliriz. 
+Fakat private ortamlar için 
+A sınıfından 10.0.0..0/8
+B sınıfından 172.16.0.0/12
+C sınıfından 192.168.0.0/16
+D sınıfından 127.0.0.0/8
+
+127.0.0.1 Loopback Ip 
+
+169.254.0.0/16 APIPA -->>Makine Dhcp den veya bir şekilde Ip alamadığı için ortamdan 169.254.0.0/16 bloğundan bir Ip alabilir. Bu işi de Rarp üzerinden yapabilir. 
+
+  ICMP (Internet Control Message Protokol )
+
+Ping komutu kullanılır. 
+İçinde herhangi bir veri türü barındırmaz. 
+Type ve Kodlar bulunur. 
+
+Type 3 = Destitnaton Unreachable 
+	Code 8 = Port Unreachable 
+	Code 9 = Host unreachabe 
+Type 8 = Echo --> Ping 
+Type 11 = Time Exceeded
+
+
+  Ip Header Format 
+
+Total Length -->Paketin toplam büyüklük bilgisi 
+IHL (Header Length) --> Başlık büyüklüğü bilgisi
+Type of Service -->
+İdentification --> Paketin kimlik bilgisi 
+Fragment offset --> İletim yapılan network eğer iletilecek datayı büyüklüğünü karşılamıyor ise bu durumda bunu parçalara bölünmesi gerekir. Bu esasa göre paket parçalara bölünür. 
+Time to Live --> Eğer herhangi bir şekilde hata olursa, paketin sonsuza kadar ağda kalmaması için ttl değeri girilir. Her hop noktasında bu değer kontrol edilir. 
+Protokol -->  TCP UDP bilgisi
+Chechksum --> Paketin bozulup bozulmadığı kontrolü 
+
+
+Ethernet 
+IPv4
+TCP/UDP
+Data
+
+  UDP 
+Source port - Destitnaton Port 
+Length - Chechksum
+
+Önemli olan hızdır. 
+Firewall kapalı
+		Paket iletilir Karşı taraf 
+				1. cevap verebilir 
+				2. Cevap vermez
+		Port kapalı udp paketi alınmadı.Karşı taraf 
+				ICMP port unreachable gönderir. 
+				
+  TCP
+
+1. ---> SYN ----> 2 
+1. <--- SYN + ACK <---- 2 
+1. ---> ACK ----> 2 				
+
+Rst --> SYN göndermeden ACK veya data gönderirsen RST gönderir.
+
+Firewall
+Ip ve Port Bazlı olarak izin verme veya yasaklama işi yapar.
+Client --> Router / Firewall ---> Server 
+  Örnek Bir Uygulama
+192.168.5.0/30 
+0,1,2,3  verilebilecek ip adresleri 
+Sunucu 192.168.5.1
+Router 192.168.5.2
+172.16.16.4/30
+4,5,6,7 verilebilecek ip ler 
+Router  172.16.16.5
+Client 172.16.16.4
+
+netstat -lntup  ---> Hangi portları dinliyor
+nc 192.168.5.1 80 -v -->Routerdan sunucuya Karşı tarafta ki 80 portunu bağlanır  
+nc -l -p 80 
+nc -u 192.168.5.2 80 -v 
+route -n 
+netstat -r
+ 
+ Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         10.0.3.2        0.0.0.0         UG    0      0        0 enp0s8
+0.0.0.0         10.0.3.2        0.0.0.0         UG    101    0        0 enp0s8
+10.0.3.0        0.0.0.0         255.255.255.0   U     101    0        0 enp0s8
+192.168.5.0     0.0.0.0         255.255.255.252 U     0      0        0 enp0s3
+[aty@centos7 ~]$
+
+ROUTE table ı gösterir. 
+
+[aty@centos7 ~]$ sudo route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         10.0.3.2        0.0.0.0         UG    0      0        0 enp0s8
+0.0.0.0         10.0.3.2        0.0.0.0         UG    101    0        0 enp0s8
+10.0.3.0        0.0.0.0         255.255.255.0   U     101    0        0 enp0s8
+192.168.5.0     0.0.0.0         255.255.255.252 U     0      0        0 enp0s3
+[aty@centos7 ~]$ ping 172.16.16.6 -c 1
+PING 172.16.16.6 (172.16.16.6) 56(84) bytes of data.
+
+--- 172.16.16.6 ping statistics ---
+1 packets transmitted, 0 received, 100% packet loss, time 0ms
+
+
+Biz 172.16.16.6 adresine gitmek için aşağıdaki route ekledik. 
+
+
+[aty@centos7 ~]$ route add -net 172.16.16.4/30 dev enp0s3 gw 192.168.5.2
+SIOCADDRT: Operation not permitted
+[aty@centos7 ~]$ sudo route add -net 172.16.16.4/30 dev enp0s3 gw 192.168.5.2[
+
+Route ekledikten sonra ping attık.
+ 
+[aty@centos7 ~]$ ping 172.16.16.6 -c 1
+PING 172.16.16.6 (172.16.16.6) 56(84) bytes of data.
+
+--- 172.16.16.6 ping statistics ---
+1 packets transmitted, 0 received, 100% packet loss, time 0ms
+
+
+Client tarafına şidi ping gönderiryoruz. 
+[aty@centos7 ~]$ ping 172.16.16.5 -c 1
+PING 172.16.16.5 (172.16.16.5) 56(84) bytes of data.
+
+--- 172.16.16.5 ping statistics ---
+1 packets transmitted, 0 received, 100% packet loss, time 0ms
+
+
+İP forwarding 
+root@debian:~# cat /proc/sys/net/ipv4/ip_forward
+0
+
+  IPTABLES 
+Netfilter modulünü yönetmek için kullanılan bir tooldur.
+Table
+Mangle -->Düzenleme (TTL değiştirme, Quality Of Service QoS değiştirme 
+Nat 	--> Adresleme  
+Filter --Filtreleme (Accept, Deny, Drop )
+
+Chain --> Prerouting - Input - Output - Forward -  PostRouting
+
+root@debian:~# iptables -L  
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Eğer kuralı yazarken tablo belirtmezsek Iptables default olarak filter tablosuna yazar.
+
+
+root@debian:~# iptables -L -n -t nat
+Chain PREROUTING (policy ACCEPT)
+target     prot opt source               destination
+
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain POSTROUTING (policy ACCEPT)
+target     prot opt source               destination
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+
+
+
+root@debian:~# iptables -L -n -t mangle
+Chain PREROUTING (policy ACCEPT)
+target     prot opt source               destination
+
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain POSTROUTING (policy ACCEPT)
+target     prot opt source               destination
+root@debian:~#
+
+
+Her tablonun içindeki zincirlerin ön tanımlı bir politikası vardır. 
+
+Filter tablosuna yeni bir chain ekleme: 
+root@debian:~# iptables -N yenichain -t filter
+root@debian:~# iptables -L -n -t filter
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain yenichain (0 references)
+target     prot opt source               destination
+
+
+Yeni chain eklediğimizde, bu chaini akışın içine dahil etmemeiz gerekiyor. Yoksa bu akış içerisinde olmadığı için chain uygulanmaz. Akış yukarıdan aşağıya ekler. 
+
+Kural eşleşmesş yakaladğı anda paket ile ilgili yapılması gereken işlem ne ise o yapılır. 
+
+iptables -A --> Append
+			-I 
+			
+iptables -A INPUT --source 192.168.5.1 -p icmp --help
+
+ iptables -A INPUT --source 192.168.5.1 -p icmp -j DROP
+  root@debian:~# iptables -L -nv
+Chain INPUT (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+    0     0 DROP       icmp --  *      *       192.168.5.1          0.0.0.0/0
+
+Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain OUTPUT (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain yenichain (0 references)
+ pkts bytes target     prot opt in     out     source               destination
+
+Server dan client a ping atabiliyoruz...Router ın forward etmesinin engellemek için FORWARD a kuralı girmek lazım 
+[aty@centos7 ~]$ ping 172.16.16.5 -c 1
+PING 172.16.16.5 (172.16.16.5) 56(84) bytes of data.
+64 bytes from 172.16.16.5: icmp_seq=1 ttl=63 time=0.556 ms
+
+--- 172.16.16.5 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.556/0.556/0.556/0.000 ms
+
+
+Kuralı silme 
+İlk önce numberını bul 
+Chain INPUT (policy ACCEPT 0 packets, 0 bytes)
+num   pkts bytes target     prot opt in     out     source               destination
+1        1    84 DROP       icmp --  *      *       192.168.5.1          0.0.0.0/0
+
+Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+num   pkts bytes target     prot opt in     out     source               destination
+
+Chain OUTPUT (policy ACCEPT 0 packets, 0 bytes)
+num   pkts bytes target     prot opt in     out     source               destination
+
+Chain yenichain (0 references)
+num   pkts bytes target     prot opt in     out     source               destination
+
+root@debian:~#  iptables -D INPUT 1
+
+
+BURADA Router tarafında paket kabul edildikten sonra çıkışını yine kendi üzerinden yapacağı için buraya router ın ip sini yazdık.
+root@debian:~#  iptables -A OUTPUT --source 192.168.5.2 -p icmp -j DROP
