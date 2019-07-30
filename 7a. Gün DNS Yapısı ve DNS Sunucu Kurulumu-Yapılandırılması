@@ -37,6 +37,122 @@ Namespace
 fqdn --> Fully qualified Domain Namespace
 Gerçek adres --> www.gentoo.org. -> Sonda nokta vardır. 
 
+DNS Server Kurulumu 
+1. İlk önce zone soyası oluşturulacak 	example.com bir zone dosyasıdır. 
+
+vim /etc/bind/db.example.com
+Bu ayarları sadece master sunucuda yapabiliriz.
+Slavelere gşttşğimizde bunları binary olarak tutar, sonucta slaveler değiştirmezler.
+;
+;
+;
+$ORIGIN . 
+$TTL 1800 ;30 minutes  -->
+example.com IN (Internet)  SOA (startup authority) alice.example.com. dnsadmin.example.com. (
+		1 ; Serial
+		28800  ; Refresh (8 hours) --->Master dan sorgu yenilemesi ne sıklıkta yapılacak 
+		7200   ; Retry (2 hours) --> Masterdan cevap alamazsa kac saatte bir yenileyecek 
+		864000 ; Expire (10 days) --> Masterdan ne kadar süre cevap alınamzsa slave deki bilgiler artık tamamen geçersiz sayılacak 
+		86400	; Negative Cache TTL (1 day) --> NX domain alırsAN AYNI cevap ne kadar geçerli)
+		)
+;
+
+	IN NS alice.example.com.
+	IN A  127.0.0.1  --> www yazılmadan da siteye ulaşılmasını sağlar.
+	IN AAA  ::1
+	IN MX   10 mail.example.com. -->>10 rakamı öncelik belirtir.
+
+$ORIGIN example.com.  --> Hepsine example.com eklememek için 
+$TTL 900
+
+alice 	IN  A 		192.168.10.10
+	INi AAAA 	2001:470:1f0b:7c3:1::2
+
+
+
+root@client:/etc/bind# named-checkconf -z
+zone localhost/IN: loaded serial 2
+zone 127.in-addr.arpa/IN: loaded serial 1
+zone 0.in-addr.arpa/IN: loaded serial 1
+zone 255.in-addr.arpa/IN: loaded serial 1
+
+named.conf.local dosyasına aşağıdaki parameterleri 
+vim /etc/bind/named.conf.local
+//
+// Do any local configuration here
+//
+
+// Consider adding the 1918 zones here, if they are not used in your
+// organization
+//include "/etc/bind/zones.rfc1918";
+zone "example.com" {
+	type master;
+	file "/etc/bind/db.example.com";
+};
+
+
+
+BIND9 u restart etmek lazım 
+root@client:/etc/bind# systemctl restart bind9
+
+REVERSE DNS KAYDI (Ip den İsme gitmek )
+
+ip için dns sorgu yapar  ismi gelir  
+isim için dns sorgusu yapar ip gelir
+
+in-addr.arpa --- Ip 'den adrese giderken tüm dünyada buna sorgulatırız. 
+5.168.192.in-addr.arpa  gibi...
+
+root@client:/etc/bind# vim db.10.168.192.in-addr.arpa
+$ORIGIN . 
+$TTL 70800 ;30 minutes
+10.168.192.in-addr.arpa  IN  SOA localhost. root.localhost. (
+		1 ; Serial
+		64800  ; Refresh (8 hours)
+		7200   ; Retry (2 hours)
+		864000 ; Expire (10 days)
+		86400	; Negative Cache TTL (1 day)
+		)
+;
+
+	IN NS ns1.example.com.
+
+$ORIGIN 10.168.192.in-addr.arpa.
+
+10 	IN  PTR 	alice.example.com.
+21 	IN  PTR 	bob.example.com
+
+
+Daha sonra aşağıdaki satırları ekledik.
+root@client:/etc/bind# vim /etc/bind/named.conf.local
+
+zone "10.168.192.in-addr.arpa" {
+	type master;
+	file "/etc/bind/db.10.168.192.in-addr.arpa";
+};
+
+
+Bunları yaptıktan sonra tekrardan checkconf yaptık ve rndc yi reload ettik. 
+rndc bind serverını yönetmek için kullanılan bir komut. 
+
+root@server:~# /usr/sbin/named-checkconf -z
+zone example.com/IN: loaded serial 1
+zone 10.168.192.in-addr.arpa/IN: loaded serial 1
+zone localhost/IN: loaded serial 2
+zone 127.in-addr.arpa/IN: loaded serial 1
+zone 0.in-addr.arpa/IN: loaded serial 1
+zone 255.in-addr.arpa/IN: loaded serial 1
+root@server:~# rndc reload
+server reload successful
+
+
+
+root@server:~# dig -x 192.168.10.10 @127.0.0.1 +short
+alice.example.com.
+root@server:~# dig alice.example.com. +short @127.0.0.1
+192.168.10.10
+
+
 
 				.
 			.org  .com  .ford 
