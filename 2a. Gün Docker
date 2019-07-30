@@ -1,0 +1,152 @@
+  DOCKER 
+Docker konteynır sisteminde; base işletim sistemi üzerine docker daemonı kurulur ve Docker konteynırlar bu daemon ile konuşur. 
+
+Debian üzerinde kurulu olan docker sürümünü öğrenmek için;
+root@debian:~# apt info docker.io
+Package: docker.io
+Version: 18.09.1+dfsg1-7.1
+
+Not: Docker ortalama 3 ayda bir sürüm çıkartmaktadır. Dağıtımda gelen sürümü kullanmak yerine yeni sürümü kullanmak gereklidir. 
+
+Docker dokümantasyonu :
+https://docs.docker.com/install/linux/docker-ce/ubuntu/
+
+Not:Docker kendi reposundaki sürümü kurup dağıtımdan gelen sürümü kaldırmak gereklidir. 2 si birden çalışmaz. 
+
+###########################################################
+Kritik not virtual box veya herhangi bir makinaya direk bağlanmak için 
+virtual box ın network ayarlarına gidilip gelişmiş sekmesinden Host makina portuna örneğin 2222 girilip guest makina portuna 22  yaparak port forwarding yapılabilir. 
+
+\ karakteri bash üzerinde kendinden sonra gelen karakteri dikkate alma demektir. \ bash için özel anlamı vardır. 
+###########################################################
+
+Docker kurulumu --->> Web sitesinden takip ediyoruz. Ubuntu'nun Docker kurulumu ile ilgili dokümantasyonu genel anlamda iyi, kurulum için bizde bu dokümantasyonu kullandık.
+  a. apt-install komutları ile repolara https üzerinden ulaşmasına izin vermek için aşağıdaki paketleri kurduk.
+ sudo apt-get install  apt-transport-https ca-certificates curl gnupg2   software-properties-common
+
+  b. GPG key ini kendi makinamıza ekledik 
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
+
+  c. Repoyu kaynak listemize ekledik.
+root@debian:~#  tail  /etc/apt/sources.list
+deb http://deb.debian.org/debian/ buster-updates main
+deb-src http://deb.debian.org/debian/ buster-updates main
+
+Komutu : 
+ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs)  stable"
+
+  ç. apt update ile repo update edildi.
+
+  d. Kurulum baştıldı. 
+apt-get install docker-ce docker-ce-cli containerd.io
+
+Dockerın çalışıp çalışmadığını anlamanın en iyi yolu bir docker container başlatmaktır. 
+
+root@debian:~# docker run hello-world
+
+Tüm konteynerlar bu kaynaktadır. 
+https://hub.docker.com/
+
+Docker konteyner içerisinde bir tane process çalıştırdığı için  bu process ölürse docker konteyner da ölür. 
+
+Aşağıdaki komut çalışan docker konteynerların listesini verir. Peki hello world neden gözükmüyor? Çünkü docker run hello-world ile konteyner hello world u ekrana bastı ve konteyner kapandı.
+root@debian:~# docker ps
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+
+Çalışmayan-çalışan hepsini tüm konteynır listesi için ise;
+root@debian:~# docker ps -a
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                     PORTS               NAMES
+c79f7b7e7017        hello-world         "/hello"            5 minutes ago       Exited (0) 5 minutes ago                       inspiring_stonebraker
+
+Burada her docker imaj ön tanımlı olarak bir command ile gelir.  Hello-world için command "/hello" programıdır (komutudur). Status durumunda exited(0) ile başarılı olarak sonlanmıştır. Kontainer_id konteyner a özel bir id. 
+"NAMES" kısmında biz bir isim vermediğimiz için docker bize kendisi bir isim verdi. 
+
+Her docker imaj ının versiyonu vardır. Eğer : ile imaj isminden sonra herhangi bir versiyon vermezsek latest olan çalışır. 
+
+Docker -i ile konteyner ın standartın girdisini konteyner girdisine bağlar. -t ile terminal bağlantısı açar. /bin/bash ile bu komutu ön tanımlı komutu çalıştırır.
+
+docker run -it ubuntu /bin/bash
+root@e2bb16dab915:/# ps
+   PID TTY          TIME CMD
+     1 pts/0    00:00:00 bash
+    10 pts/0    00:00:00 ps
+
+docker ı başlattık şimdi ise başka bir terminalde çalışan docker konteynerlara bakıyoruz. 
+root@debian:~# docker ps -a
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                      PORTS               NAMES
+6e63f59da658        ubuntu              "/bin/bash"         14 seconds ago      Up 13 seconds                                   determined_taussig
+
+Docker içinde iken bir dosya oluşturduk 
+root@6e63f59da658:/# touch /deneme
+Sonra çıktık ve o konteyner ismi ile tekrar başalattık
+
+root@debian:~# docker start determined_taussig
+
+root@debian:~# docker ps -a
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                      PORTS               NAMES
+6e63f59da658        ubuntu              "/bin/bash"         10 minutes ago      Up 55 seconds                                   determined_taussig
+
+
+
+root@debian:~# docker stop determined_taussig
+
+Konteynır ın içine çalışırken girmek için -a ile output ve -i ile de input sağlıyacak parametreleri gönderdik 
+
+root@debian:~# docker start -a -i  determined_taussig
+root@6e63f59da658:/#
+
+root@debian:~# docker start --help
+
+Usage:  docker start [OPTIONS] CONTAINER [CONTAINER...]
+
+Start one or more stopped containers
+
+Options:
+  -a, --attach               Attach STDOUT/STDERR and forward signals
+      --detach-keys string   Override the key sequence for detaching a
+                             container
+  -i, --interactive          Attach container's STDIN
+  
+  
+ Şimdi ise ilk önce docker start ettik sonra ise terminal attach ettik. 
+  root@debian:~# docker start determined_taussig
+determined_taussig
+root@debian:~# docker attach determined_taussig
+root@6e63f59da658:/#
+
+Docker ı terminal bağlantısı ile girip container ı kapatmadan çıkmak için ctrl-p ctrl-q komutunu arka arkaya sırasıyla vericez. 
+
+Docker ı attach ederken hangi komutla detach edeceğimi verebilirim .
+aty@debian:~$ sudo docker start determined_taussig
+[sudo] password for aty:
+determined_taussig
+aty@debian:~$ sudo docker attach --detach-keys="ctrl-x" determined_taussig
+Her konteyner içinde tek bir program çalışacak şekilde tasarlanmıştır. Bu yüzden her konteyner kendi ön tanımlı programı ile gelir. 
+
+Bu komut ile docker ön tanımlı httpd imajının programı yerine bin/bash çalıştırabiliriz. 
+docker run  -it hhtpd /bin/bash 
+
+Bir tane ubunutu konteyner ayağa kaldırıdık ve deneme1 adlı klasör oluşturup konteyner dan çıktık
+
+aty@debian:~$ sudo docker run --name ubuntu01 -it ubuntu  /bin/bash
+root@ea5f127986c7:/# touch /deneme1
+root@ea5f127986c7:/# exit
+
+
+Bu komutu ile sileriz. 
+docker rm ubuntu01
+
+aty@debian:~$ sudo docker info
+Containers: 5
+ Running: 1
+ Paused: 0
+ Stopped: 4
+Images: 3
+Server Version: 18.09.8
+Storage Driver: overlay2
+ Backing Filesystem: extfs
+ 
+ Docker yukarıdaki çıktıdan görüleceği üzere overlay2 dosya sistemi kullanır.  Peki overlay dosya sistemi ne işe yara? Örneğin bir tane ubuntu docker imaj ı çalıştırdım . Daha sonra bu imaj ile bir tane daha konteyner oluşturdum. ve bu şekilde bir kaç konteyner oluşturdu. Burada docker her konteyner için imaj ın dosyalarını kopyalamaz. Herhangi bir konteyner da mesela /etc/passwd dosyasında değiştirdiğimizde docker ana dosyanın üzerine o konteyner için değişikliği başka bir dosyaya yazıyor ve ana dosyada oynama yapmıyor. bu şekilde hep ana imaj aynı kalıyor. 
+ 
+ Makinanın 8080 portunu docker ın 80 portuna yönlendirecek şekilde konteynerayağa kaldırır. 
+ aty@debian:~$ sudo docker run -p 8080:80 httpd
