@@ -1,0 +1,68 @@
+BRIDGE OLUŞTURMA, INTERFACE EKLEME
+
+   Veth nedir?
+Virtual eth demektir. Çift olarak çalışır. Bu durumda 2 makineyi karşılıklı olarak güvenli bir şekilde bağlar.
+Ancak sadece 2 makineyi biribirine bağlayabilir, daha fazla makineyi birbirine bağlayamaz. Bu da vethın bir kısıtıdır. 
+Eğer 5 makineyi birbirine bağlamak istersek ne olacak?
+Bu problemi çözmek için Bridge yapısı geliştirilmiştir. 
+Bridge aslında bir konteynırdır. Bridge aygıtı içerisine konulan diğer aygıtlar birbiri ile konuşabilir. 
+Yani biridge aygıtı bir nevi fiziksel bir ethernet switch olarak düşünülebilir. 
+
+  Bridge Ekleme ve Bridge İçine Aygıt Tanımlama
+
+	  Bridge Ekleme
+[root@localhost ~]# brctl show  -->>Eklemeden önce
+bridge name     bridge id               STP enabled     interfaces
+[root@localhost ~]# brctl addbr bridge0 -->>Ekleme komutu
+[root@localhost ~]# brctl show
+bridge name     bridge id               STP enabled     interfaces
+bridge0         8000.000000000000       no  -->> Eklenen bridge aygıtı
+
+    Interface Ekleme
+Aşağıdaki komut ile dummy0 ve dummy1 adlı bir interface ekledik ve bunları bridge0 altına koyduk.
+
+ip link add dummy1 type dummy
+6: dummy0: <BROADCAST,NOARP> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether 1a:65:2e:30:7b:2c brd ff:ff:ff:ff:ff:ff
+7: dummy1: <BROADCAST,NOARP> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether 6a:3b:8d:f5:25:f4 brd ff:ff:ff:ff:ff:ff
+	
+[root@localhost ~]# brctl addif bridge0 dummy0
+[root@localhost ~]# brctl addif bridge0 dummy1
+[root@localhost ~]# brctl show
+bridge name     bridge id               STP enabled     interfaces
+bridge0         8000.1a652e307b2c       no              dummy0
+                                                        dummy1
+	
+ip link komutunu verince bizim dummy0 ve dummy1 in down olduğunu gördÜk. Bu yüzden 2 interface de up hale aşağıdaki komut ile getirdik.
+	
+[root@localhost ~]# ip link set dummy0 up
+[root@localhost ~]# ip link set dummy1 up
+
+[root@localhost ~]# tcpdump -i dummy0
+ile dummy0 a gelen istekleri dinliyoruz ancak bir şey gelmedi
+
+Dummy0 ve dummy1 e ip adreslerini verdik.
+
+[root@localhost ~]# ip address add 10.0.5.5/24  dev  dummy0
+[root@localhost ~]# ip address add 10.0.5.6/24  dev  dummy1
+
+ping -I dummy0 10.0.5.6 -->> Dummy0 ı kullanarak 10.0.5.6 ip adresine ping gönder
+
+tcpdump -i dummy0 -->> dummy0 aygıtına gelen istekleri dinliyoruz.
+
+
+Başka Bir Örnek
+
+[root@localhost ~]# ip link add veth0 type veth peer name veth1
+[root@localhost ~]# ip link add veth2 type veth peer name veth3
+[root@localhost ~]# brctl addif bridge0 veth2
+
+  Bridge veya Ip Link Ayağa Kaldırma
+ip link set bridge0 up
+ip addr add 10.0.5.1/24  dev bridge0 -->>> bridge e de ip verdik. 
+tcpdump -i  bridge0  -->> Bridge i tcpdump ile dinledik.
+
+Eğer 2 tane fiziksel makine üzerindeki sanal makinaları haberleştirmek istiyorsak;  fiziksel makinelerin bağlanacağı ethernet kartı kablolu olmalıdır, wireless ethernet kartı ile bu işlem yapılamaz. 
+Bridge içerisine fiziksel ağ kartı koyarız, daha sonra bu ağ kartlarını switch üzerinden haberleştiririz. 
+Daha ileri ihtiyaçlar için Open V Switch kullanılmkatadır.
