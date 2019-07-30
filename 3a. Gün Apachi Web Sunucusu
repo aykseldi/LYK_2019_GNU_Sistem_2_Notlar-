@@ -1,0 +1,266 @@
+
+  CLient tarafta ne çalışır, Sunucu tarafında ne çalışır?
+Bir şeyi sunucuya koymadan direk clientda çalışabiliyorsa bunlar istemcide çalışan uygulamalardır. 
+Html, css, javascript, java appletler, adobe flash
+Sunucu tarafında çalışanlar ise php, java, diango, ruby
+
+Tarayıcılar da sunucular tarafından render edilen sayfayı farklı yorumlayabilir. Css dosyalarının bazılarını destekleme, activeX desteği gibi gibi...
+
+İstemci tarafı bizim kontrolümüzde olmadığı için kullanılan teknolojiler sınırlıdır.
+  SSL ne işe yarar?
+Http yerine Https bağlantısı
+443 -->> Secure http
+Http bağlantısı ile bizim nereyeye ve hangi web sayfasının hangis kısmına bağlandığımız görülür. İçerik de görülür. 
+
+Https ile sadece nereye bağlandığımız bilinebilir. İçerik ssl ile şifrelendiği için daha güvenlidir.
+
+Tarayıcı üzerinde ssl sertifikalarını üreten yayıncıların listesi bulunur.
+
+SSL Bağlantısı 
+1.İstemci sunucuya  çözebileceği şifreleme algoritmalarını söyler.
+2.Sunucu istemcinin belirttiği şifreleme algoritmalarından biriyle key üretir ve istemciye gönderir. 
+3.İstemci ile artık üretilen bu key üzerinden haberleşme başlar. 
+
+Sertifika aslında bir kimik bilgisidir. 
+Garanti.com.tr nin ssl sertifikası sayesinde ben gerçekten garanti.com.tr yim ve kimlik belgem budur der. 
+İstemci nin elinde ise ise kimin ne olduğunu gösteren bir kimlik listesi vardr. İstemci kendi elindekine ve sunucunun gösterdiğine bakarak güvenli olduğuna karar verir.
+Sertifikanın hangi otorite tarafından imzalandığı önemlidir. Otorite kimlik doğruluğuna kefil olur. 
+
+Ssl sunucusu neden çalıştırılır?
+Örneğin sunucu tarafında bir ssl sunucusu olur. Sunucu tarafında üretilen ssl key istemciye konulur.
+İstemci tarafında ssl key depolanır. İstemci sunucuya bu anahtar ile bağlanır. İstemci tarafında sunucu known hostlara eklenir. 
+
+
+Bir client bir sunucuya bağlandı , bir sayfaya tıkladı. Sonra başka bir sayfaya tıkladı. Peki sunucu diğer sayfayı aynı kullanıcıya gösterdiğini nasıl bilir?
+
+Http stateless bir protokoldür. Http açısından her istek biribirinden bağımsızdır. 
+Bu durumda sunucu, kullanıcıya bir takım tokenlar göndermelidir. Bir tane id üretilir. Bunlar karşılıklı paylaşılır. Client tarafında ancak bunlar değiştirilebilir. 
+Sunucu tarafında ise gelen clientın aynı kişi olup olmadığını kontrol için elde bulunan id (token), tarayıcı bilgisi, en son token üretilme tarihi gibi şeyler kontrol edilir. 
+Sunucu gidip clientın bilgisayarına bir token gönderir. Sunucu da kendi tarafında bu tokenı tutar. 
+
+
+Google Analytics filan bir siteye şu kadar tekil kullanıcı bağlandı diyor, neye göre?
+Kullanıcı sayfanın metadata da referral (bir önceki site sayfa bilgisi) olur . onlara bakarak bir tahmin yapar.
+
+GET ile POST metodu arasında ne fark vardır?
+Get ile bookmarklayabiliriz ve her seferinde get methodu ile alınan site her seferinde aynı yere gider. 
+Post methodunda url üzerinden bilgi gönderilmez.;
+	*** Değişkenler kişiye özgü bir bilgisi ise post yerine get ile göndeilirse şahsi bilgi (kullanıcı adı, parola vb.) ortaya çıkar.
+	*** Web sunucusu kendi tuttuğu loglarda  url de bulunur. Bu yüzden get methodu ile gelen değişkenler url in bir parçası olduğu için loglarda kişisel bilgiler görünebilir.
+
+
+  Apachi Sunucusu Kurulumu ve Yapulandırması
+Apache ile ilgili (config) ayarları nerede buluruz?
+
+[aty@centos7 ~]$ rpm -qc httpd
+
+/etc/httpd/conf.d/autoindex.conf
+/etc/httpd/conf.d/userdir.conf
+/etc/httpd/conf.d/welcome.conf
+/etc/httpd/conf.modules.d/00-base.conf
+/etc/httpd/conf.modules.d/00-dav.conf
+/etc/httpd/conf.modules.d/00-lua.conf
+/etc/httpd/conf.modules.d/00-mpm.confd
+/etc/httpd/conf.modules.d/00-proxy.conf
+/etc/httpd/conf.modules.d/00-systemd.conf
+/etc/httpd/conf.modules.d/01-cgi.conf
+/etc/httpd/conf/httpd.conf
+/etc/httpd/conf/magic
+/etc/logrotate.d/httpd
+/etc/sysconfig/htcacheclean
+/etc/sysconfig/httpd
+
+
+Debian da ise dpkg -config
+
+[aty@centos7 ~]$ sudo ps -fe | grep httpd | wc -l
+10
+
+Apache modüler bir sistemdir. Ne kadar az modül o kadar az bellek tüketir. ve o kadar çok kullanıcı karşılayabiliriz. 
+  Apachi Modülleri
+Genelde modüller dinamik gömülmüştür.ve ayarlar ile kaldırabilir. 
+[aty@centos7 conf.d]$ httpd -l
+Compiled in modules:
+  core.c
+  mod_so.c
+  http_core.c
+
+Apache ye bir modül ekleyince buraya girmek geregiyor.
+/etc/httpd/conf/httpd.conf
+Örneğin bir paket kurmak silmek istediğimde
+
+Kaldır deyince /etc/httpd/conf.d dosyasından modul ile gelen ayar dosyaları bu şekilde kaldırır. 
+
+Sunucu tarafında eğer bir ayar dosyası değiştirirsem servisi tamamen kapatmak yerine reload edilmeli ancak her zaman bu işe yaramaz. 
+Örneğin apache ye module ekleme ve kaldırma işi yapıldığında binaryler derlenmesi gerektiği için servis restart edilmelidir. 
+
+Apache Örnek Modülleri
+mod_dav -->> Http üzerinden dosya paylaşımı
+
+mod_deflate -->> Sunucu tarafında dosyayı sıkıştırıp client tarafında otomatik açmasını sağlayan modül. 
+
+mod_ldap  --->> Ldap otantikasyonu sğalar. Örneğin bir dosyayı ldap ile autenticate ederek kişilerin almasını sağlar.
+
+mod_speling -->>Sayfa url inde hatalı yazımları otomatik düzeltmesini sağlar.
+
+mod_substitute -->>Uygulamanın ürettiği bir çıktıyı filtreler ve istediğimiz şekilde düzeltme imkanı sağlar
+
+mod_userdir -->> Sunucu üzerinde kullanıcılara kendi home dizinlerini  gösterir.
+
+mod_usertrack -->> Cookie yerleştirir
+
+mod_pagespeed: Web optimizasyonu
+
+mod_security: Güvenlik, WAF gibi, F5 gibi kullanılabilir
+
+suhosin: PHP Güvenliği
+
+mod_php: PHP Dili
+
+mod_wsgi: Python
+
+mod_perl: Perl
+
+mod_jk: Servlet
+ 
+  Apache'ye Modul Ekleme
+
+[aty@centos7 conf.modules.d]$ ll /etc/httpd/conf.modules.d/
+total 28
+-rw-r--r--. 1 root root 3739 Apr 24 09:44 00-base.conf
+-rw-r--r--. 1 root root  139 Apr 24 09:44 00-dav.conf
+-rw-r--r--. 1 root root   41 Apr 24 09:44 00-lua.conf
+-rw-r--r--. 1 root root  742 Apr 24 09:44 00-mpm.conf
+-rw-r--r--. 1 root root  957 Apr 24 09:44 00-proxy.conf
+-rw-r--r--. 1 root root   88 Apr 24 09:44 00-systemd.conf
+-rw-r--r--. 1 root root  451 Apr 24 09:44 01-cgi.conf
+ 
+/etc/httpd/conf.modules.klasörüne gidip diyez le yorum haline getirilmiş bir modülü kaldırarak, servisi tekrardan başlattığımızda modul enable edilmiş oluyor. 
+
+OPEN-SSL yükleme
+1. İlk önce mod ssl yükledim
+ sudo yum install mod_ssl
+ 2. Buunun sonucu ayrı bir modül dosyası üretti 
+ [aty@centos7 ~]$ grep -c ssl /etc/httpd/conf.modules.d/*.conf
+/etc/httpd/conf.modules.d/00-base.conf:0
+/etc/httpd/conf.modules.d/00-dav.conf:0
+/etc/httpd/conf.modules.d/00-lua.conf:0
+/etc/httpd/conf.modules.d/00-mpm.conf:0
+/etc/httpd/conf.modules.d/00-proxy.conf:0
+/etc/httpd/conf.modules.d/00-ssl.conf:1
+/etc/httpd/conf.modules.d/00-systemd.conf:0
+/etc/httpd/conf.modules.d/01-cgi.conf:0
+
+3. [aty@centos7 ~]$ sudo httpd -M | grep ssl
+ ssl_module (shared)
+ 
+4. Servis tekrar başatıldı. 
+ sudo systemctl restart  httpd.service
+ 
+ (Not bende NAT yönlendirme olduğu için virtual box a kendi ana makinamdan virtual makinada çalışan htttps servisine gitmesi forwardlama kuralı girdim .
+ Ana Makina 8082 Virtual MAkina 443)
+ 
+ 
+ SSL ayarı 
+ Bir tane 
+ Ssl özel anahtarımız (private key) ve açık anahtar (public key) oluştururuz. 
+
+LetsEncrypt projesi ile para almadan SSL sertifikası üretir. 
+
+Benim web sayfam nerede çalışıyor. 
+[aty@centos7 ~]$ sudo grep Document  /etc/httpd/conf/httpd.conf
+# DocumentRoot: The directory out of which you will serve your
+DocumentRoot "/var/www/html"
+    # access content that does not live under the DocumentRoot.
+#ErrorDocument 500 "The server made a boo boo."
+#ErrorDocument 404 /missing.html
+#ErrorDocument 404 "/cgi-bin/missing_handler.pl"
+#ErrorDocument 402 http://www.example.com/subscription_info.html
+
+
+php modülünü ekledik. 
+sudo yum install php
+
+daha sonra bir php dosyası oluşturduk .
+[aty@centos7 ~]$ more /var/www/html/index.php
+<?php
+echo "Merhaba";
+ ?>
+
+sonra direk siteye gttik. 
+Merhaba
+
+Kurulan modülün oluşturuduğu conf dosyalarını incelemek gereklidir ki modülün ne yaptığını daha iyi kavrayabililelim.
+
+  Apachi'de Virtual Hosting Yapma
+Virtuak Hosting aynı sunucu üzerinde birden fazla host tutmaya yarar.
+
+2. tane virtual host tanımlanacak.
+Kendi yerelimde bir adresi test edicem 
+kayit.linux.org.tr
+kamp.linux.org.tr
+
+1. 2 tane index htlm oluşturdum. Bunlardan birinde kayıt diğerinde kamp linux sayfasını göstericem.
+[aty@centos7 ~]$ sudo vim  /var/www/kayitlinux.com/index/index.html
+[aty@centos7 ~]$ sudo vim  /var/www/kamplinux.com/index/index.html
+
+2. Konf dosyalarını oluşturdum 
+ sudo vim /etc/httpd/conf.d/kayit.com.conf
+ 
+ <VirtualHost *:80>
+ ServerName localhost
+ ServerAlias   www.kayitlinux.com
+ DocumentRoot /var/www/kayitlinux.com/index/
+</VirtualHost>
+
+  sudo vim /etc/httpd/conf.d/kamp.com.conf
+
+<VirtualHost *:80>
+ ServerName 192.168.43.163
+ ServerAlias www.kamplinux.com
+ DocumentRoot /var/www/kayitlinux.com/index/
+</VirtualHost>
+
+
+3. Ana makşnanın etc/hosts dosyasına şunları girdim 
+127.0.0.1 www.kamplinux.com
+127.0.0.1 www.kayitlinux.com
+
+4. Servisi restart ettim. 
+sudo systemctl restart httpd
+
+5. Ana makinadan 
+http://www.kamplinux.com:8081/
+http://www.kayitlinux.com:8081/
+
+PROXY Sunucu
+Örneğin hürriyet.com a giderken önce bir proxy sunucu koyuyoruz. İlk seferde hürriyet ten gidip sayfayı alır ancak başka biri tekrar almaya çalıştığında hürriyet com a bağlanmaz onun yerine proxy sunucu kendi cache inden web sayfasını verir. 
+
+  Ters Proxy 
+Önde bir apachi sunucusu var arkada bir takım servisler çalışıyor. 
+Önde tarafta güvenlik sıkılaştırma için apachi ye gelir herkes. Bağlantı yapanlar ssl ile apachiye gelip arka tarafta servisler ile apache ssl olmadan haberleşir. 
+
+Ters Proxy için apachi ye sen git servisten veriyi al, servis ile clientları muhattap etmeden direk apachi tarafından client a data verilebilir. 
+
+Apachi sunucusunda Ters proxy için yapılan işlemler 
+1. Daha önceden 2 tane web sitesi hazırlamıştık. Şimdi bunlara gelen isteği apache sunucusu bizim istediğimiz bir adrese yönlendirecek.  
+
+Bunun için aşağıda oluşturduğum konf dosyasına 
+
+ Aşağıdaki parametreleri girdim.
+***
+ProxyRequests On
+ProxyPass /  http://www.google.com
+ProxyPassReverse / http://wwww.google.com
+****
+Konf dosyasının son hali: 
+
+[aty@centos7 ~]$ sudo more  /etc/httpd/conf.d/kamp.com.conf
+<VirtualHost *:80>
+ServerName localhost
+ServerAlias www.kamplinux.com
+DocumentRoot /var/www/kamplinux.com/index/
+ProxyRequests On
+ProxyPass /  http://www.google.com
+ProxyPassReverse / http://wwww.google.com
+</VirtualHost>
