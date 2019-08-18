@@ -37,6 +37,34 @@ setup-2.8.71-10.el7.noarch
 [root@ldap ~]# rpm -qa *ftp*  --> Ben de ftp diye bir şey kurulu mu sorusuna cevap veriri.
 vsftpd-3.0.2-25.el7.x86_64
 
+
+DİĞER DOSYA/DİSK PAYLAŞIM SİSTEMLERİ 
+
+Diğer dosya paylaşım sistemleri;
+rsync -->Diff alabilir. Yedekleme için idealdir.
+iscsi --> Bir diski network üzerinden başka bir makineye bir disk olarak verebiliriz. Böylece o makina ISCI ile verilmiş alanı kendi diski imiş gibi kullanabilir. 
+NFS veya FTP de biz bir dizini paylaşıma sunuyoruz. Yani NFS ve FTP den farklı bir durum oluşuyor. 
+
+
+	Örnegin 2 tane KVM makinem olsun ve farklı fiziki makinelerde çalışmakta. KVM makinalarımda çalışan servisler önemli ve kapanmasını istemiyorum.
+	Elimizde de 10 Tb disk kapasiteli boşta duran bir sunucunm var. 
+				KVM1 --> 2 TB 
+				
+				KVN2 --> 2 TB 
+				
+	/etc/libvirth/qemu 
+	/var/lib/libvirth/images
+	
+	
+	ISCSI ile network üzerinden diskleri başka bir makineye verebiliriz.Ancak network üzerinden verdiğimiz için hızımız (read veya write IO) network hızı kadardır. 
+	Boşta duran sunucumuzda da LVM yapısı olsun. Biz ISCSI olarak bu diskleri KVM makinelere verdiğimizde KVM makşnelerimiz bueada network ün 
+	hızı kadar hızlı çalışabilir. 
+	
+	FCoE--> Fiber Channel Over Ethernet
+	8/16/32/64 GB /sec
+	
+
+
 rpm paket bağımlılığını çözmez, bağımlılıkları yum çözer. Yum kendi bir repo listesi tutar. Bende ki yum repoları;
 [root@ldap ~]# ls -ala  /etc/yum.repos.d/
 total 60
