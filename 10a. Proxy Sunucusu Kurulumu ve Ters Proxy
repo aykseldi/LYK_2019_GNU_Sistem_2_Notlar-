@@ -85,3 +85,38 @@ sudo tail -300f /var/log/squid/access.log
 1564657542.448 263760 192.168.43.163 TCP_TUNNEL/200 553606 CONNECT www.youtube.com:443 - HIER_DIRECT/172.217.169.110 -
 1564657543.450 263768 192.168.43.163 TCP_TUNNEL/200 294 CONNECT fonts.gstatic.com:443 - HIER_DIRECT/216.58.206.195 -
 1564657543.461 263785 192.168.43.163 TC
+
+
+REVERSE PROXY 
+Ters Proxy Sistemleri
+	Apachi 
+	Nginx --> C ile yazılmış. Digital izi daha küçük, Apache gibi büyük ve hantal bir yapı değildir. 
+		Hem bir web sunucusu	
+		IMAP ve POP2 için ters proxylik yapabilir.
+	HA-Proxy
+	Envoy
+
+			App1 							|   www.lale.com
+											|
+			App1
+											Ters
+			App2 							Proxy    satis.lale.com
+											|
+			
+			App2							|		fatura.lale.com
+	
+			App3							|
+			
+			App3 		site1  site1
+			
+	İnternetten içeri giriş mekanizmalarının kurgulandığı bir yerdir. Biz lale.com a gelen siteleri site1 ve site2 ye gönderir.  Ancak satis.lale.com ve fatura.lale.com u ise app1 ve app2 sunucularına yönlendşrebilir. 		
+	Ssl sonlandırması reverse proxy tarafında yapılır. 
+	Uygulama eğer session bilgisi tutuyorsa burada ya merkezi session yonetimi veya sticky session olmak zorundadır. 
+	Session yönetimi konusunda alternatifler boldur. 
+	
+	
+	Http 1.1 in kısıtı?
+	Http 1.1 ile tek domaine 3 tane session verebiliriz. Bu nedenle örneğin google, youtube gibi siteleri firefox dan debug modda açtığımızda bir sürü subdomain görürüz. Bunun sebebi ise http 1.1 in kısıtıdır. 
+	Eğer bu şekilde davranmaz isek sitenin veya uygulamanın hızı ciddi anlamda etkilenir. 
+	
+	Bir tane web sunucusuna 1024 tane connection açıldığında toplamda 1024/4 ->256 tane gerçek kişiyi karşılayabiliriz. daha fazla kullanıcıyı karşılamak için statik content için bir alt domain, diğer kontentler için başka alt domainler yapılmalıdır. 
