@@ -1,0 +1,101 @@
+
+BASH SCRIPTING
+  B 	 A 		SH		
+Bourne 	Again 	Shell
+
+Bash Scripting içerisinde sıralı bir yapı vardır. 
+Konsolda yazabildiğimiz ve çağırabilidğimiz her şeyi script ile yapabiliriz. 
+Derleme ihtiyacı olmadan belirli emir setlerini çalıştırabiliriz. 
+
+
+#!/bin/bash
+for i in {0..6}
+do
+gunismi=$(date +%A -d "+ $i day")
+gunsayisi=$(date +%u -d "+ $i day")
+echo -n   $gunismi
+echo -n  " "
+echo  -n $gunsayisi
+echo -n "   "
+        if  [  $gunsayisi -gt "5"  ]
+         then
+        echo -n "Tatil oley"
+        fi
+echo
+done
+exit
+
+Bash fonksiyonel bir dildir. Biz fonksiyon tanımlayabiliriz.
+
+
+#!/bin/sh--> It's called a shebang, and tells the parent shell which interpreter should be used to execute the script 
+
+0 - stdin
+1 - stdout
+2 - stderr
+
+
+[aty@ldap ~]$ cp gunler.sh  deneme1.sh
+[aty@ldap ~]$ echo $?  --> Son çalışan programı hata komutunu (bitişini)  gösterir.
+0
+
+[aty@ldap ~]$ ospdlfşg
+-bash: ospdlfşg: command not found
+[aty@ldap ~]$ echo $?
+127
+
+[aty@ldap ~]$ ls /aw
+ls: cannot access /aw: No such file or directory
+[aty@ldap ~]$ echo $?
+2
+set komutu
+ -n -->      Read commands but do not execute  them.   This  may  be
+                      used  to  check a shell script for syntax errors.  This
+                      is ignored by interactive shells.
+ -t      Exit after reading and executing one command.
+ -x      After  expanding each simple command, for command, case
+                      command, select command,  or  arithmetic  for  command,
+                      display the expanded value of PS4, followed by the com‐
+                      mand and its  expanded  arguments  or  associated  word
+                      list.
+
+declare -a service_list=("httpd","mysqld") --> Array tanımı
+
+for i in "${service_list[@]}" --> Tüm 
+
+spid = $(komut) --> Komutun çıktısını değişkene atar 
+spid = $(pgrep -x $i )
+if [[-z $spid ]] ---> Çift köşeli parantes kullanmak if in  bash tarafından çalıştırılmasında hata olmamasını sağlar.
+-->-z parametresi nedemek?
+ -z string
+              True if the length of string is zero.
+
+set -n 
+
+BACKUP_DIR='/srv/backup'
+BACKUP_SERV='/srv/backup'
+BACKUP_SERV_PORT='22'
+
+die() {
+
+	echo "$*" > &2
+	exit 234
+}
+
+warn() {
+
+	echo "$*" > &1
+	
+}
+
+mkdir $db_backup_dir || die "öl"
+
+mkdir $db_backup_dir && die "öl"
+
+cp -a -->Dizinin tüm alt dizinlerini, sahiplikleri ve linklerini koruyarak copylar 
+
+--> linkleme yaparken  absolute path belirtmek lazımdır. 
+	
+$0 değişkeni o dosyanın kendisini gösteren bir değişkendir.
+$1 $2 .... --> shell de gönderdimiz parametredir
+$* ---> tüm parametrelerei gösterir
