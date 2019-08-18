@@ -1,0 +1,49 @@
+LOGLARIN  UZAK SUNUCUYA GÖNDERİLMESİ 
+Logların uzak bir makineye ip ve port bilgisi girdikten sonra logları gönderebiliriz. 
+Mümkünse bunları ayrı bir interface üzerinden göndermek gerekir. 
+Eth0 ile dahili haberleşme 
+Eth1 ile logların gönderilmesi yapılabilir.
+ 
+[aty@ldap conf.d]$ yum info rsyslog
+Loaded plugins: fastestmirror
+Loading mirror speeds from cached hostfile
+ * base: mirror.hosting.com.tr
+ * epel: ftp.arnes.si
+ * extras: mirror.nexsoft.com.tr
+ * updates: mirror.hosting.com.tr
+Installed Packages
+Name        : rsyslog
+Arch        : x86_64
+Version     : 8.24.0
+Release     : 34.el7
+Size        : 1.9 M
+Repo        : installed
+From repo   : anaconda
+Summary     : Enhanced system logging and kernel message trapping daemon
+URL         : http://www.rsyslog.com/
+License     : (GPLv3+ and ASL 2.0)
+Description : Rsyslog is an enhanced, multi-threaded syslog daemon. It
+            : supports MySQL, syslog/TCP, RFC 3195, permitted sender lists,
+            : filtering on any message part, and fine grain output format
+            : control. It is compatible with stock sysklogd and can be used
+            : as a drop-in replacement. Rsyslog is simple to set up, with
+            : advanced features suitable for enterprise-class,
+            : encryption-protected syslog relay chains.
+
+
+GrayLog loglama konusunda başka 
+
+Minumum 3 tane node kurulması tavsiye edilir. 
+
+GrayLog kendisi MongoDb ile beraber gelir. 
+GrayLog için sanallaştırma olmadan yapmakta fayda var. Burada 6 tane makine üzerindedir. 
+Burada Mongolar üzerinde full text search yapılmıyor, aramalar Elastic Search ile yapar. 
+
+
+		ElasticSearch1 <---------->		Gray1 	Mongo
+				
+		ElasticSearch1	<---------->	Gray2 	Mongo
+				
+		ElasticSearch1 	<---------->	Gray3 	Mongo
+
+Uygulamanın Logunu, İşletim Sisteminin, Veritabanının hatta Veritabanındaki sorguların logunu tutturabiliriz. Grafana ile entegre olailir.
