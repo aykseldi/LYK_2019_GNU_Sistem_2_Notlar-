@@ -1,0 +1,207 @@
+Linux Sistem Yapısı
+
+			Installer
+				|
+		Installer-package  man 
+				|
+			Conf Dosyaları
+				|
+			App - App - App
+				|
+			  Kernel
+
+Linux From Scratch: Kendi Linux Makineninizi tamamemen kendi ihtiyaçlarınıza göre ayarlayarak 
+ayağa kaldırmayı hedefleyen bir projedir.
+Linux from Scratch --> Linux From Scratch (LFS) is a project that provides you with step-by-step 
+instructions for building your own custom Linux system, entirely from source code.
+
+	Linux Sürüm Numaralandırması
+	
+App 			major 		minor 
+Debian			4			19
+	
+Bizim Linux bilgisayarımızda 2 çeşit uygulama var;
+	1. Derlenmiş ve kernele gömülmüş binary uygulamalar1 --
+	2. Derlenmiş ancak kernele gömülmeyip dosya sisteminde duran uygulamalar var.
+
+
+Makinanın üstindeki kernel imajını gösterir.
+root@client:/lib/modules# ls -la /lib/modules
+total 12
+drwxr-xr-x  3 root root 4096 Jul 14 22:39 .
+drwxr-xr-x 68 root root 4096 Jul 30 12:50 ..
+drwxr-xr-x  3 root root 4096 Jul 14 22:39 4.19.0-5-amd64
+
+
+lsmod ile derlenmiş ancak kernela gömülmemiş modulleri gösterir. 
+root@client:/lib/modules# lsmod
+Module                  Size  Used by
+fuse                  122880  3
+crct10dif_pclmul       16384  0
+crc32_pclmul           16384  0
+ghash_clmulni_intel    16384  0
+snd_intel8x0           45056  0
+intel_rapl_perf        16384  0
+snd_ac97_codec        147456  1 snd_intel8x0
+ac97_bus               16384  1 snd_ac97_codec
+snd_pcm               114688  2 snd_intel8x0,snd_ac97_codec
+serio_raw              16384  0
+pcspkr                 16384  0
+snd_timer              36864  1 snd_pcm
+joydev                 24576  0
+snd                    94208  4 snd_intel8x0,snd_timer,snd_ac97_codec,snd_pcm
+soundcore              16384  1 snd
+vboxguest              40960  0
+battery                20480  0
+sg                     36864  0
+ac                     16384  0
+evdev                  28672  10
+ip_tables              28672  0
+x_tables               45056  1 ip_tables
+autofs4                49152  2
+ext4                  733184  1
+crc16                  16384  1 ext4
+mbcache                16384  1 ext4
+jbd2                  122880  1 ext4
+crc32c_generic         16384  0
+fscrypto               32768  1 ext4
+ecb                    16384  0
+hid_generic            16384  0
+usbhid                 57344  0
+hid                   135168  2 usbhid,hid_generic
+sr_mod                 28672  0
+cdrom                  65536  1 sr_mod
+sd_mod                 61440  3
+ata_generic            16384  0
+crc32c_intel           24576  2
+aesni_intel           200704  0
+aes_x86_64             20480  1 aesni_intel
+crypto_simd            16384  1 aesni_intel
+cryptd                 28672  3 crypto_simd,ghash_clmulni_intel,aesni_intel
+glue_helper            16384  1 aesni_intel
+vmwgfx                327680  2
+ohci_pci               16384  0
+ehci_pci               16384  0
+ohci_hcd               61440  1 ohci_pci
+ttm                   126976  1 vmwgfx
+drm_kms_helper        200704  1 vmwgfx
+ahci                   40960  2
+libahci                40960  1 ahci
+ata_piix               36864  0
+ehci_hcd               94208  1 ehci_pci
+psmouse               172032  0
+usbcore               290816  5 ohci_hcd,ehci_pci,usbhid,ehci_hcd,ohci_pci
+i2c_piix4              24576  0
+drm                   483328  5 vmwgfx,drm_kms_helper,ttm
+usb_common             16384  1 usbcore
+libata                270336  4 ata_piix,libahci,ahci,ata_generic
+e1000                 155648  0
+scsi_mod              245760  4 sd_mod,libata,sg,sr_mod
+video                  45056  0
+button                 16384  0
+
+
+	XFS Dosya Sistemi Nedir?
+XFS bir dosya sistemidir. 
+XFS is a robust and highly-scalable single host 64-bit journaling file system.
+It is entirely extent-based, so it supports very large file and file system sizes.
+The maximum supported file system size in Red Hat Enterprise Linux 6.8 and later is 300 TB. 
+The maximum supported XFS file system size in Red Hat Enterprise Linux 6.7 and earlier is 100 TB.
+The number of files an XFS system can hold is limited only by the space available in the 
+file system.
+https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/performance_tuning_guide/s-storage-xfs
+Red-Hat'lerde Sistem başlarken kernel'i mount etmek için XFS Dosya sistemi kullanılır.  
+
+
+root@client:/lib/modules# modinfo xfs
+filename:       /lib/modules/4.19.0-5-amd64/kernel/fs/xfs/xfs.ko
+license:        GPL
+description:    SGI XFS with ACLs, security attributes, realtime, no debug enabled
+author:         Silicon Graphics, Inc.
+alias:          fs-xfs
+depends:        libcrc32c
+retpoline:      Y
+intree:         Y
+name:           xfs
+vermagic:       4.19.0-5-amd64 SMP mod_unload modversions
+sig_id:         PKCS#7
+signer:         Debian Secure Boot CA
+sig_key:        A7:46:8D:EF
+sig_hashalgo:   sha256
+signature:      A8:16:25:A6:56:70:15
+
+
+Bir dosya oluşturfuğumda ne olur ?
+touch dede gibi. Bir dosyayı diğer kişilerle paylaşmak için ne yaparım. 
+Dosya paylaşımı için en uygun yöntem FTP'dir.
+Windows üzerinden bir dosya paylaşımı yaptığımızda NetBios Protokolü (--> Samba --> TCP 139)
+kullanılır. 
+Ancak Samba güvenlik açığı olan bir protokoldür. 
+
+
+
+S-ATA --> Serial Advanced Technology Attachment
+SCSI --> Small Computer System Interface 
+
+
+Disklerin ana kartla haberleşmesini sağlayan protokoller vardır. 
+Diskleri çıkış süreci  SCSI-->IDE--> P-ATA--> SATA --> SAS
+											                       6 GB/s
+İlk 4 tipte bir diskimiz var ise, SCSI, IDE,P-ATA, SATA gibi, bunlar üzerinde bir FTP sunucusu
+varsa bizim diskten okuma hızımız yavaş olduğu için network çıkış hızımız ne olursa olsun 
+düzgün bir hizmet verilemez. 
+
+###################
+Nedir Liderahenk?
+Kurumsal ağ üzerindeki, sınırsız sayıda farklı sistemi ve kullanıcılarını tek merkezden 
+yönetebilmeyi, izlemeyi ve denetlemeyi sağlayan,TÜBİTAK ULAKBİM tarafından geliştirilen
+açık kaynaklı bir yazılım sistemidir.
+###################
+
+
+Kullandığım release i nasıl bilirim ?
+root@client:/lib/modules# cat /etc/debian_version
+10.0
+
+
+Kickstart --Red Hat 
+Bir tane yapılandırma dosyası oluşturup, bu yapılandırma ile birden fazla (çok fazla) sunucu kurulabilir. 
+Hem yönetmek hem de kayıt yapmak için bu sistem kullanılabilir. 
+grey log u --> elastic search ile aratabiliriz. 
+
+Unix Socket nedir?
+
+Her katman kendisine ait veriyi bilip  algılayabilir. Katmanlarda yukarı doğru çıktıkça, 
+her katman kendi alanına göre if koşulları ile engelleme yapılabilir.
+
+App 			Application firewall --> Uygulamaya özel engelleyici kurallar 		yazılabilir. 
+Presentation
+Session
+Tcp				Firewall
+Ip				Firewall
+Data
+Fiziksel
+
+127.0.0.1 Loop-back interface -- TCP/Ip yapılandırması işletim sistemi tarafında düzgün 
+çalışıyorsa biz loopback ip ile haberleşebiliriz. 
+Kendi içimde de bu şekilde haberleşirken Tcp stack ini kullanırız. 
+Tcp kullandığımız her yerde tcp konuşma protokolü syn, syn-ack uygulanır ve bu bir overhead
+oluşturur. 
+
+Interpreted diller -- kod derlenmez, derleyici aracılıyla konuşur. php, python gibi
+
+
+		Apachi -> Mod_Php -->> Php
+		Apachi php ile mod_php ile onuşur. Mod php php yi interpret eder. 
+		
+		
+
+Unix socket ise kendi soket mekanizması ile konuşur. 
+Overhead i olmadığı için çok hızlı konuşur. Unix soket sadece kendi makinamızda (localde) çalışır.
+
+
+Database ---Unix Socket---php-fdm  -------Unix Socket---Nginx ----------> TCP
+
+Eğer aynı makinada 2 tane docker ım varsa bunları Tcp yerine
+Unix socketi üzeirnden konuşturmak performas açısından baya bir kazanç sağlar. 
+
