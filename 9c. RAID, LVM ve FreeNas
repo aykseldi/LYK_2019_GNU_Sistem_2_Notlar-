@@ -1,0 +1,85 @@
+RAID, LVM ve FreeNAS
+
+				
+		Bizim tüm depolama alanlarımız block device dir. 
+		## Loglatma için 2 tane yöntem var. 
+		1. Yöntem de ayrı bir disk mount edip oraya logları bastırmak
+		2.Aynı makine üzerinde farklı partitionlar oluşturup oraya loglama yaptırılabilir. ANcak böyle olursa aynı disk üzerinde IO operasyonu çok fazlalaşacaktır. Aynı diske hem read IO hem write IO yaparsak darboğaz oluşur.
+		Kolaylaştırdığı şey ise backup almaktır.
+		3. rsyslog vasıtasıyla loglar başka bir sunucuya gönderilebilir. SIEM
+		
+		
+		
+	OS 				LVM
+				-----------------
+					RAID 5/6
+					2  --> 100 GB Disk
+					3  --> 100 GB Disk   Bu şkekilde 60 dan 200-300 IO per second
+					4  --> 100 GB 		 IO hızına erişenbiliriz.
+					5  --> 100 GB 
+					6  --> 100 GB 
+		
+		
+		100 GB lık 2 tane disk için 
+		Raid 0 -- Disklerin tamamı kullanılır. 
+		Raid 1 -- 100 gb kapasite var. Mirroring yapıyor. 
+		Raid 1 0 -- 100 gb lık yer var ama IO hı
+		Raid 5 --> Kapasite 60-70 Gb a düşer 
+		Raid 6 --> kapasite 70-80 Gb olur ama IO hızı düşer.Yedeklilik artar
+		
+		
+		LVM
+		Fiziki diskler ilk önce Physical Group içerisine alınmalı
+		 Diskler 1-2-3-4-5-6 
+		PG ler daha sonra Volume group lar içine alınır. Örneğin 2 şer disk aynı Volume group içine 
+			(1-2) VG 1  (3-4) VG 2 (4-5) VG 3
+		Daha sonra VG ler Logical Group un içine alınarak, tek diskmiş gibi görünür. 
+			(VG 1 -VG 2 - VG3) 
+		
+	FreeNAS			
+FreeNAS is an operating system that can be installed on virtually any hardware platform to share data over a network. FreeNAS is the simplest way to create a centralized and easily accessible place for your data. Use FreeNAS with ZFS to protect, store, backup, all of your data. FreeNAS is used everywhere, for the home, small business, and the enterprise.
+
+		Yüksek IO lu yerlerde RAID yapısı kullanılmak istenmez çünkü Raid kontroller da ayrı bir overhead oluşturur. Eğer FreeNAS kullancak isek Raid i bypass ettirmek gerekir. 
+		
+
+	Stat Komutu 		
+[root@ldap ~]# stat dede
+  File: ‘dede’
+  Size: 0               Blocks: 0          IO Block: 4096   regular empty file
+Device: fd00h/64768d    Inode: 16876421    Links: 1
+Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2019-07-29 16:14:56.270199115 -0400
+Modify: 2019-07-29 16:14:56.270199115 -0400
+Change: 2019-07-29 16:14:56.270199115 -0400
+
+Bİz eğer access time bilgisi açık olursa bir sürü log bilgisi üretir. 
+Peki bunu access time bilgisini nerede kapatacağız? 
+
+mount edilirken kapatılacak. Bunu da fstab a girmemiz gerekecek. discard.noatime.nodirtime
+
+Bir diskimiz var gerçekte %80 boş ama bize boş yer yok yazamıyorum diyor. Bunun sebebi ne olabilir? 
+Inode tükenmiş olabilir. 
+Eğer çok fazla minik dosyalar var ise bu nednele inode tükenebilir. 
+
+
+**ssh a bağlı kullanıcılara mesaj atabiliriz
+[aty@ldap ~]$ write root pts/1
+Merhaba root
+Bir şeye ihtiyacım var acil
+Nasıl yapalım
+Hmm
+
+[root@ldap ~]#
+Message from aty@ldap.ali.net on pts/0 at 00:25 ...
+Merhaba root
+
+
+
+Tcp Wrapper --> Application layerinde ip filtrelemesi yapabiliriz
+
+
+FTP yapmak için FTP servisine illa ihtiyaç yoktur. Eğer ssh yapabiliyorsak 
+ssh -p 2230 aty@localhost --> sftp -P  2230 aty@localhost
+
+scp den farkı scp ile karşı taraftan dosya yükler veya çekebiliriz ama rename edemeyiz. 
+sftp de ise bunlara ilaveten upload , download yapabildiğim gibi rename de yapabilirim.
