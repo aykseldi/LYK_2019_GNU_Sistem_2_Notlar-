@@ -1,0 +1,63 @@
+DHCP --> 2. Katmanda (Data) çalışır.
+	DHCP zehirlenmesi
+	Yerel ağda FIFO kuralı geçerlidir. Örneğin bir clientın Dhcp sunucusuna gitme süresi switch üzerinden 20 ms olsun.
+	Zehirlenmiş bir Dhcp sunucusu olur ise ve clientın bu Dhcp sunucusuna gitme süresi 10 ms olur ise zehirlenmiş (poisened) Dhcp, clienta ip verebilir. 
+	Bu durumda zehirlenmiş Dhcp clienta ip ve gatewayi verebilir. Bu durumda client internete çıkışını bu gateway üzerinden yapar ve mesela sahte facebook  sayfası ile bilgilerini parolayı alır daha sonra da orjinal facecbook sayfasına yönlendirebilir. 
+	Bunu engellemek için switch üzerinde örneğin benim dhcp broadcastlerin 24. porttan yapılıyor ve bu port harici herhangi bir dhcp broadcasti yaptırma diyebiliriz.
+	
+
+
+NAGIOS 
+Bir izleme (monitoring) uygulamasıdır. Çşitli alarlama mekanizmaları vardır. Disk doluluğu, CPU, memory, uptime vb. parametreleri takip eder. 
+Snmp üzerinden alınan veri gerçekleşmiş veridir.
+
+
+
+TMPFS ve RAMFS
+Yüksek IO oluşacak yerlerde memory den bir alanı disk gibi verebiliriz. Bu şekilde in memory çalışmayan sistemlerde performans arttırmak maksadıyla kullanılabilir. 
+
+Sqllite bir veritabanı ancak diğer veritabanları gibi bir deamon ile ayakta değildir. Biz sorduğumuzda cevap verir. Örneğin arm işlemcilerde sd card üzerinde işlem yapıyorsak tmpfs ve ramfs verebiliriz. Ancak elektrik giderse bu data kaybolur, persistent değildir. 
+
+
+NGINX 
+Web sunucusu ve Reverse Proxy özelliği vardır . 
+Base repoda olmayan şeyler EPEL reposunda bulunur. EPEL --> Extra Packages Enterprise Linux
+
+Temel yapılandırma dosyası 
+[aty@ldap ~]$ vim /etc/nginx/nginx.conf
+
+
+user nginx;
+worker_processes auto;  -->Kaç tane çekirdek varsa o kadar açar. Bunu kısıtlayabilirz.
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+# Load dynamic modules. See /usr/share/nginx/README.dynamic.
+include /usr/share/nginx/modules/*.conf;
+
+events {
+    worker_connections 1024; --> 8 thread çalıştırırsam 1024x8 tane açılır
+}
+
+
+
+[aty@ldap conf.d]$ ls -la /etc/nginx/conf.d/
+total 4
+
+
+UNIX Sokettten Uygulama Nasıl Bağlanır?
+Mevcut unix soketlerimizi aşağıdaki komut ile bakabiliriz. 
+
+[aty@ldap conf.d]$ netstat -anp  | grep unix
+(No info could be read for "-p": geteuid()=1000 but you should be root.)
+unix  2      [ ]         DGRAM                    15362    -                    /var/run/chrony/chronyd.sock
+unix  2      [ ACC ]     STREAM     LISTENING     14595    -                    /var/run/rpcbind.sock
+unix  2      [ ACC ]     STREAM     LISTENING     14607    -                    /run/dbus/system_bus_socket
+unix  2      [ ACC ]     STREAM     LISTENING     16664    -                    /var/run/NetworkManager/private-dhcp
+unix  2      [ ACC ]     STREAM     LISTENING     19266    -                    private/tlsmgr
+unix  2      [ ACC ]     STREAM     LISTENING     19269    -                    private/rewrite
+unix  2      [ ]         DGRAM                    12088    -                    /run/systemd/shutdownd
+unix  2      [ ACC ]     STREAM     LISTENING     19259    -                    public/cleanup
+unix  2      [ ACC ]     STREAM     LISTENING     19262    -                    public/qmgr
+unix  2      [ ACC ]     STREAM     LISTENING     19284    -                    public/flush
+unix  2      [ ACC ]     SEQPACKET  LISTENING     12146    -                    /run/udev/control
